@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} [%t] %-5level %logger{36} - %msg%n"/>
+        </Console>
+
+        <RollingFile name="detail" append="true" fileName="logs/detail.log" filePattern="logs/detail.log.%d{yyyy-MM}">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %p [%c] - %m%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/><!-- 1 month roll over -->
+            </Policies>
+        </RollingFile>
+        <RollingFile name="status" append="true" fileName="logs/status.log" filePattern="logs/status.log.%d{yyyy-MM}">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %p [%c] - %m%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+        </RollingFile>
+        <File name="summary" append="false" fileName="logs/summary.log">
+            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
+        </File>
+
+        <RollingFile name="multi_vt" append="true" fileName="logs/QTLs_with_multiple_VT_annotations.log" filePattern="logs/QTLs_with_multiple_VT_annotations.log.%d{yyyy-MM}">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %p [%c] - %m%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+        </RollingFile>
+        <File name="multi_vt_daily" append="false" fileName="logs/QTLs_with_multiple_VT_annotations_daily.log">
+            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
+        </File>
+
+        <RollingFile name="multi_cmo" append="true" fileName="logs/QTLs_with_multiple_CMO_annotations.log" filePattern="logs/QTLs_with_multiple_CMO_annotations.log.%d{yyyy-MM}">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %p [%c] - %m%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+        </RollingFile>
+        <File name="multi_cmo_daily" append="false" fileName="logs/QTLs_with_multiple_CMO_annotations_daily.log">
+            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
+        </File>
+
+    </Appenders>
+
+    <Loggers>
+        <Root level="INFO">
+            <AppenderRef ref="Console"/>
+        </Root>
+        <Logger name="status" level="debug" additivity="false">
+            <AppenderRef ref="detail"/>
+            <AppenderRef ref="status" level="info"/>
+            <AppenderRef ref="summary" level="info"/>
+            <AppenderRef ref="Console" level="info"/>
+        </Logger>
+
+        <Logger name="multi_vt" level="debug" additivity="false">
+            <AppenderRef ref="multi_vt"/>
+            <AppenderRef ref="multi_vt_daily"/>
+            <AppenderRef ref="Console" level="info"/>
+        </Logger>
+        <Logger name="multi_cmo" level="debug" additivity="false">
+            <AppenderRef ref="multi_cmo"/>
+            <AppenderRef ref="multi_cmo_daily"/>
+            <AppenderRef ref="Console" level="info"/>
+        </Logger>
+    </Loggers>
+</Configuration>

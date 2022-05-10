@@ -1,2 +1,5 @@
+May 10, 2022
+  converted to gradle project
+
 2019-10-07
   title of summary emails: replaced [Morgan] with actual server name

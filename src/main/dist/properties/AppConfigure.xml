@@ -1,0 +1,7 @@
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+
+<beans>
+    <bean id="manager" class="edu.mcw.rgd.pipelines.PhenominerQC" >
+        <property name="version" value="PhenominerQC Pipeline  -- build May 10, 2022" />
+    </bean>
+</beans>
