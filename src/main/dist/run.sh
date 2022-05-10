@@ -29,6 +29,11 @@ if [ -s "$XCO22_ISSUES_FILE" ]; then
     mailx -s "[$SERVER] phenominer qc: XCO:0000022 records with duration less than 1 minute" $CURATOR_EMAIL < $XCO22_ISSUES_FILE
 fi
 
+NULL_UNIT_CONVERSIONS_FILE="$APPDIR/logs/null_unit_conversion_daily.log"
+if [ -s "$NULL_UNIT_CONVERSIONS_FILE" ]; then
+    mailx -s "[$SERVER] phenominer qc: unit conversions with nulls" $CMO_DEVELOPER_EMAIL < $NULL_UNIT_CONVERSIONS_FILE
+fi
+
 mailx -s "[$SERVER] phenominer qc pipeline OK" $DEVELOPER_EMAIL < "$APPDIR/logs/summary.log"
 
 exit 0
@@ -36,14 +41,6 @@ exit 0
 # TODO
 ######
 
-
-
-echo "Check if there is any null unit conversions."
-OUTPUT_FILE=$OUTPUT_FOLDER/null_unit_conversions.tsv
-$UTILS_HOME/bin/run_sql.sh check_unit_conversion_table.sql $OUTPUT_FILE
-mailx -s "[$SERVER] Checking null unit conversions finished." $CMO_DEVELOPER_EMAIL < $OUTPUT_FILE
-
-mv $OUTPUT_FILE ../logs/null_unit_conversions_$($UTILS_HOME/bin/get_log_date.sh).log
 
 echo "Calculate SEM, SD or number of animals given the other two."
 OUTPUT_FILE=$OUTPUT_FOLDER/SEM_SD_NOA_results.tsv

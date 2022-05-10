@@ -47,7 +47,11 @@ public class PhenominerQC {
 
         // run queries
         List<String> issues = dao.checkXCO22Duration();
-        log.info("XCO:0000022 records with duration less than 1 minute: "+issues.size());
+        log.info("XCO:0000022 records with duration less than 1 minute:   "+issues.size());
+
+        issues = dao.checkUnitConversionsForNulls();
+        log.info("unit conversions with nulls:   "+issues.size());
+
 
         String msg = "=== OK === elapsed "+ Utils.formatElapsedTime(time0, System.currentTimeMillis());
         log.info(msg);
