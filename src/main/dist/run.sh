@@ -34,27 +34,17 @@ if [ -s "$NULL_UNIT_CONVERSIONS_FILE" ]; then
     mailx -s "[$SERVER] phenominer qc: unit conversions with nulls" $CMO_DEVELOPER_EMAIL < $NULL_UNIT_CONVERSIONS_FILE
 fi
 
+INVALID_RSO_USAGE_FILE="$APPDIR/logs/invalid_rso_usage_daily.log"
+if [ -s "$INVALID_RSO_USAGE_FILE" ]; then
+    mailx -s "[$SERVER] phenominer qc: RSO term(s) used without valid RGD ID" $RSO_DEVELOPER_EMAIL < $INVALID_RSO_USAGE_FILE
+fi
+
 mailx -s "[$SERVER] phenominer qc pipeline OK" $DEVELOPER_EMAIL < "$APPDIR/logs/summary.log"
 
 exit 0
 ######
 # TODO
 ######
-
-
-echo "Calculate SEM, SD or number of animals given the other two."
-OUTPUT_FILE=$OUTPUT_FOLDER/SEM_SD_NOA_results.tsv
-$UTILS_HOME/bin/run_sql.sh update_sem_sd_noa.sql $OUTPUT_FILE
-mailx -s "[$SERVER] Calculate SEM, SD or NOA." $DEVELOPER_EMAIL < $OUTPUT_FILE
-
-mv $OUTPUT_FILE ../logs/null_unit_conversions_$($UTILS_HOME/bin/get_log_date.sh).log
-
-echo "Check if any RSO term used in PM don't have RGD IDs."
-OUTPUT_FILE=$OUTPUT_FOLDER/NO_RGDID_RSO_terms_results.tsv
-$UTILS_HOME/bin/run_sql.sh check_invalid_RSO_usages.sql $OUTPUT_FILE
-mailx -s "[$SERVER] Check if any RSO term used in PM do not have RGD IDs." $RSO_DEVELOPER_EMAIL < $OUTPUT_FILE
-
-mv $OUTPUT_FILE ../logs/invalid_RSO_usages_$($UTILS_HOME/bin/get_log_date.sh).log
 
 
 echo "Add standard units based on existing records."
@@ -76,3 +66,11 @@ echo "Get undefined unit conversions."
 OUTPUT_FILE=$OUTPUT_FOLDER/undefined_conversions.tsv
 $UTILS_HOME/bin/run_sql.sh get_not_convertible_units.sql $OUTPUT_FILE
 mailx -s "[$SERVER] Undefined unit conversions." $CMO_DEVELOPER_EMAIL < $OUTPUT_FILE
+
+echo "Calculate SEM, SD or number of animals given the other two."
+OUTPUT_FILE=$OUTPUT_FOLDER/SEM_SD_NOA_results.tsv
+$UTILS_HOME/bin/run_sql.sh update_sem_sd_noa.sql $OUTPUT_FILE
+mailx -s "[$SERVER] Calculate SEM, SD or NOA." $DEVELOPER_EMAIL < $OUTPUT_FILE
+
+mv $OUTPUT_FILE ../logs/null_unit_conversions_$($UTILS_HOME/bin/get_log_date.sh).log
+

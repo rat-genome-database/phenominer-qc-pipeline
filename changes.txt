@@ -2,6 +2,7 @@ May 10, 2022
   converted to gradle project
   added checking of XCO:0000022 (controlled sodium diet) for durations less than 1 minute
   added checking for null unit conversions
-  
+  added checking for invalid RSO usages
+
 2019-10-07
   title of summary emails: replaced [Morgan] with actual server name

@@ -52,6 +52,9 @@ public class PhenominerQC {
         issues = dao.checkUnitConversionsForNulls();
         log.info("unit conversions with nulls:   "+issues.size());
 
+        issues = dao.checkInvalidRsoUsage();
+        log.info("invalid RSO usages:   "+issues.size());
+
 
         String msg = "=== OK === elapsed "+ Utils.formatElapsedTime(time0, System.currentTimeMillis());
         log.info(msg);

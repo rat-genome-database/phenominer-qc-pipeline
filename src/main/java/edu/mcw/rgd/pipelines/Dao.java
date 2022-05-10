@@ -3,12 +3,10 @@ package edu.mcw.rgd.pipelines;
 import edu.mcw.rgd.dao.AbstractDAO;
 import edu.mcw.rgd.dao.DataSourceFactory;
 import edu.mcw.rgd.dao.impl.MapDAO;
-import edu.mcw.rgd.dao.impl.SampleDAO;
 import edu.mcw.rgd.dao.impl.variants.VariantDAO;
 import edu.mcw.rgd.dao.spring.StringListQuery;
 import edu.mcw.rgd.dao.spring.variants.VariantMapQuery;
 import edu.mcw.rgd.dao.spring.variants.VariantSampleQuery;
-import edu.mcw.rgd.datamodel.Sample;
 import edu.mcw.rgd.datamodel.variants.VariantMapData;
 import edu.mcw.rgd.datamodel.variants.VariantSampleDetail;
 import org.apache.logging.log4j.LogManager;
@@ -30,6 +28,7 @@ public class Dao {
 
     Logger logXCO22Duration = LogManager.getLogger("xco22_duration");
     Logger logNullUnitConversions = LogManager.getLogger("null_unit_conversion");
+    Logger logInvalidRsoUsage = LogManager.getLogger("invalid_rso_usage");
 
     /// XCO22 (controlled sodium diet) duration must be shorter than 1 minute
     public List<String> checkXCO22Duration() throws Exception {
@@ -73,7 +72,7 @@ public class Dao {
             "  AND ec1.EXP_COND_DUR_SEC_HIGH_BOUND > 0\n" +
             "  ) a\n" +
             "WHERE a.ecoid  = 'XCO:0000022'\n" +
-            "AND a.dur      < 60000\n" +
+            "AND a.dur      < 60\n" +
             "AND a.exid     = e.EXPERIMENT_ID\n" +
             //"and s.STUDY_ID not in (14,21,22,41,401,527,461,529,717,441,421,526,481,482,381,528,522)\n" +
             "AND e.STUDY_ID = s.STUDY_ID\n" +
@@ -107,6 +106,33 @@ public class Dao {
         return issues;
     }
 
+    public List<String> checkInvalidRsoUsage() throws Exception {
+
+        String sql =
+        "select ot.TERM_ACC||'  '||ot.TERM from ONT_TERMS ot\n" +
+            "where ot.TERM_ACC like 'RS:%'\n" +
+            "and ot.TERM_ACC not in\n" +
+            "(\n" +
+            "select os.term_acc from ONT_SYNONYMS os\n" +
+            "where os.TERM_ACC like 'RS:%'\n" +
+            "and lower(os.SYNONYM_NAME) like 'rgd id%'\n" +
+            ")\n" +
+            "and ot.IS_OBSOLETE=0\n" +
+            "and ot.term_acc in\n" +
+            "( \n" +
+            "select sa.strain_ont_id from SAMPLE sa, EXPERIMENT_RECORD er\n" +
+            "where sa.sample_id = er.sample_id\n" +
+            "and er.curation_status <> 50\n" +
+            ")\n";
+
+        List<String> issues = StringListQuery.execute(adao, sql);
+        if( !issues.isEmpty() ) {
+            for( String line: issues ) {
+                logInvalidRsoUsage.debug(line);
+            }
+        }
+        return issues;
+    }
 
 
 
@@ -140,18 +166,5 @@ public class Dao {
         q.declareParameter(new SqlParameter(Types.INTEGER));
         q.declareParameter(new SqlParameter(Types.VARCHAR));
         return q.execute(mapKey, chr);
-    }
-    public List<String> getChromosomes(int mapKey) throws Exception {
-
-        String sql = "SELECT DISTINCT chromosome FROM chromosomes WHERE map_key=? ";
-        StringListQuery q = new StringListQuery(adao.getDataSource(), sql);
-        q.declareParameter(new SqlParameter(Types.INTEGER));
-        q.compile();
-        return q.execute(new Object[]{mapKey});
-    }
-    public Sample getSample(int id) throws Exception{
-        SampleDAO sampleDAO = new SampleDAO();
-        sampleDAO.setDataSource(this.getVariantDataSource());
-        return sampleDAO.getSample(id);
     }
 }
