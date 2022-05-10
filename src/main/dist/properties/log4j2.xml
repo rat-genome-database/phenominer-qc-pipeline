@@ -21,26 +21,15 @@
             <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
         </File>
 
-        <RollingFile name="multi_vt" append="true" fileName="logs/QTLs_with_multiple_VT_annotations.log" filePattern="logs/QTLs_with_multiple_VT_annotations.log.%d{yyyy-MM}">
+        <RollingFile name="xco22_duration" append="true" fileName="logs/xco22_duration.log" filePattern="logs/xco22_duration.log.%d{yyyy-MM}">
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %p [%c] - %m%n"/>
             <Policies>
                 <TimeBasedTriggeringPolicy interval="1"/>
             </Policies>
         </RollingFile>
-        <File name="multi_vt_daily" append="false" fileName="logs/QTLs_with_multiple_VT_annotations_daily.log">
+        <File name="xco22_duration_daily" append="false" fileName="logs/xco22_duration_daily.log">
             <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
         </File>
-
-        <RollingFile name="multi_cmo" append="true" fileName="logs/QTLs_with_multiple_CMO_annotations.log" filePattern="logs/QTLs_with_multiple_CMO_annotations.log.%d{yyyy-MM}">
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %p [%c] - %m%n"/>
-            <Policies>
-                <TimeBasedTriggeringPolicy interval="1"/>
-            </Policies>
-        </RollingFile>
-        <File name="multi_cmo_daily" append="false" fileName="logs/QTLs_with_multiple_CMO_annotations_daily.log">
-            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
-        </File>
-
     </Appenders>
 
     <Loggers>
@@ -54,14 +43,9 @@
             <AppenderRef ref="Console" level="info"/>
         </Logger>
 
-        <Logger name="multi_vt" level="debug" additivity="false">
-            <AppenderRef ref="multi_vt"/>
-            <AppenderRef ref="multi_vt_daily"/>
-            <AppenderRef ref="Console" level="info"/>
-        </Logger>
-        <Logger name="multi_cmo" level="debug" additivity="false">
-            <AppenderRef ref="multi_cmo"/>
-            <AppenderRef ref="multi_cmo_daily"/>
+        <Logger name="xco22_duration" level="debug" additivity="false">
+            <AppenderRef ref="xco22_duration"/>
+            <AppenderRef ref="xco22_duration_daily"/>
             <AppenderRef ref="Console" level="info"/>
         </Logger>
     </Loggers>

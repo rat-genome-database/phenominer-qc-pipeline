@@ -5,15 +5,12 @@ import edu.mcw.rgd.dao.DataSourceFactory;
 import edu.mcw.rgd.dao.impl.MapDAO;
 import edu.mcw.rgd.dao.impl.SampleDAO;
 import edu.mcw.rgd.dao.impl.variants.VariantDAO;
-import edu.mcw.rgd.dao.spring.IntListQuery;
 import edu.mcw.rgd.dao.spring.StringListQuery;
 import edu.mcw.rgd.dao.spring.variants.VariantMapQuery;
 import edu.mcw.rgd.dao.spring.variants.VariantSampleQuery;
-import edu.mcw.rgd.dao.spring.variants.VariantTranscriptQuery;
 import edu.mcw.rgd.datamodel.Sample;
 import edu.mcw.rgd.datamodel.variants.VariantMapData;
 import edu.mcw.rgd.datamodel.variants.VariantSampleDetail;
-import edu.mcw.rgd.datamodel.variants.VariantTranscript;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.jdbc.core.SqlParameter;
@@ -32,55 +29,65 @@ public class Dao {
 
     AbstractDAO adao = new AbstractDAO();
 
-    Logger logMultiCMO = LogManager.getLogger("multi_cmo");
-    Logger logMultiVT = LogManager.getLogger("multi_vt");
+    Logger logXCO22Duration = LogManager.getLogger("xco22_duration");
 
-    static final String HEADER = "RGD_ID\tQTL_SYMBOL\tCOUNT\tTERMS\tONTOLOGY_IDS";
-
-    public List<String> getMultipleCMOAnnotations() throws Exception {
+    /// XCO22 (controlled sodium diet) duration must be shorter than 1 minute
+    public List<String> checkXCO22Duration() throws Exception {
 
         String sql =
-                "SELECT q.rgd_id || CHR(9) || qtl_symbol || CHR(9) || COUNT(*) || CHR(9) ||"+
-                        "  LISTAGG(ot.term, ',') WITHIN GROUP (ORDER BY ot.term) || CHR(9) ||"+
-                        "  LISTAGG(fa.term_acc, ',') WITHIN GROUP (ORDER BY fa.term_acc) "+
-                        "FROM full_annot fa, qtls q, ont_terms ot "+
-                        "WHERE fa.ANNOTATED_OBJECT_RGD_ID = q.RGD_ID"+
-                        "  AND fa.TERM_ACC like 'CMO:%'"+
-                        "  AND fa.TERM_ACC = ot.TERM_ACC "+
-                        "GROUP BY q.rgd_id, qtl_symbol HAVING COUNT(*) > 1";
+            "select concat('https://reed.rgd.mcw.edu/rgdweb/curation/phenominer/records.html?act=edit', " +
+            "  LISTAGG(id_url, '') within group (order by id_url)) as record_urls \n" +
+            "from (\n" +
+            "SELECT s.STUDY_ID,\n" +
+            "  e.EXPERIMENT_ID,\n" +
+            "  e.EXPERIMENT_NAME,\n" +
+            "  concat('&id=', a.ERID) as id_url,\n" +
+            "  a.*\n" +
+            "FROM study s,\n" +
+            "  experiment e ,\n" +
+            "  (\n" +
+            "  SELECT er.EXPERIMENT_RECORD_ID     AS erid,\n" +
+            "    er.EXPERIMENT_ID               AS exid,\n" +
+            "    ec.EXP_COND_ONT_ID             AS ecoid,\n" +
+            "    ec.EXP_COND_DUR_SEC_LOW_BOUND  AS dur\n" +
+            "  FROM EXPERIMENT_RECORD er,\n" +
+            "    EXPERIMENT_CONDITION ec,\n" +
+            "    MEASUREMENT_METHOD mm\n" +
+            "  WHERE er.CURATION_STATUS in (35, 40)\n" +
+            "  AND er.EXPERIMENT_RECORD_ID       = ec.EXPERIMENT_RECORD_ID\n" +
+            "  AND ec.EXP_COND_DUR_SEC_LOW_BOUND > 0\n" +
+            "  AND mm.MEASUREMENT_METHOD_ID      = er.MEASUREMENT_METHOD_ID\n" +
+            "  \n" +
+            "  UNION ALL\n" +
+            "  \n" +
+            "  SELECT er.EXPERIMENT_RECORD_ID    AS erid,\n" +
+            "    er.EXPERIMENT_ID                AS exid,\n" +
+            "    ec1.EXP_COND_ONT_ID             AS ecoid,\n" +
+            "    ec1.EXP_COND_DUR_SEC_HIGH_BOUND AS dur\n" +
+            "  FROM EXPERIMENT_RECORD er,\n" +
+            "    EXPERIMENT_CONDITION ec1,\n" +
+            "    MEASUREMENT_METHOD mm\n" +
+            "  WHERE er.CURATION_STATUS in (35, 40)\n" +
+            "  AND er.EXPERIMENT_RECORD_ID       = ec1.EXPERIMENT_RECORD_ID\n" +
+            "  AND mm.MEASUREMENT_METHOD_ID      = er.MEASUREMENT_METHOD_ID\n" +
+            "  AND ec1.EXP_COND_DUR_SEC_HIGH_BOUND > 0\n" +
+            "  ) a\n" +
+            "WHERE a.ecoid  = 'XCO:0000022'\n" +
+            "AND a.dur      < 60\n" +
+            "AND a.exid     = e.EXPERIMENT_ID\n" +
+            //"and s.STUDY_ID not in (14,21,22,41,401,527,461,529,717,441,421,526,481,482,381,528,522)\n" +
+            "AND e.STUDY_ID = s.STUDY_ID\n" +
+            ") b\n" +
+            "group by b.ecoid";
 
-        List<String> multis = StringListQuery.execute(adao, sql);
-        if( !multis.isEmpty() ) {
-            logMultiCMO.debug(HEADER);
-            for( String line: multis ) {
-                logMultiCMO.debug(line);
+        List<String> issues = StringListQuery.execute(adao, sql);
+        if( !issues.isEmpty() ) {
+            for( String line: issues ) {
+                logXCO22Duration.debug(line);
             }
         }
-        return multis;
+        return issues;
     }
-
-    public List<String> getMultipleVTAnnotations() throws Exception {
-
-        String sql =
-        "SELECT q.rgd_id || CHR(9) || qtl_symbol || CHR(9) || COUNT(*) || CHR(9) ||"+
-        "  LISTAGG(ot.term, ',') WITHIN GROUP (ORDER BY ot.term) || CHR(9) ||"+
-        "  LISTAGG(fa.term_acc, ',') WITHIN GROUP (ORDER BY fa.term_acc) "+
-        "FROM full_annot fa, qtls q, ont_terms ot "+
-        "WHERE fa.ANNOTATED_OBJECT_RGD_ID = q.RGD_ID"+
-        "  AND fa.TERM_ACC like 'VT:%'"+
-        "  AND fa.TERM_ACC = ot.TERM_ACC "+
-        "GROUP BY q.rgd_id, qtl_symbol HAVING COUNT(*) > 1";
-
-        List<String> multis = StringListQuery.execute(adao, sql);
-        if( !multis.isEmpty() ) {
-            logMultiVT.debug(HEADER);
-            for( String line: multis ) {
-                logMultiVT.debug(line);
-            }
-        }
-        return multis;
-    }
-
 
 
 
@@ -110,14 +117,6 @@ public class Dao {
         return q.execute(speciesTypeKey, mapKey, chr);
     }
 
-    public List<VariantTranscript> getVariantTranscripts(int mapKey, String chr) throws Exception{
-        String sql = "select vt.* from variant_transcript vt inner join  variant_map_data v on v.rgd_id=vt.variant_rgd_id AND v.map_key=? AND v.chromosome=?";
-        return this.executeVarTranscriptQuery(sql, mapKey, chr);
-    }
-    public List<VariantTranscript> getVariantTranscripts(int rgdId) throws Exception{
-        String sql = "select * from variant_transcript where variant_rgd_id = ?";
-        return this.executeVarTranscriptQuery(sql, rgdId);
-    }
     public List<VariantSampleDetail> getSampleIds(int mapKey, String chr) throws Exception{
         String sql = "select vs.* from variant_sample_detail vs inner join variant_map_data vm on vm.rgd_id = vs.rgd_id and vm.map_key=? and vm.chromosome = ?";
         VariantSampleQuery q = new VariantSampleQuery(this.getVariantDataSource(), sql);
@@ -145,16 +144,5 @@ public class Dao {
 
     public Map<String,Integer> getChromosomeSizes(int mapKey) throws Exception{
         return mapDAO.getChromosomeSizes(mapKey);
-    }
-
-    public List<VariantMapData> executeVariantQuery(String query, Object... params) throws Exception {
-        VariantMapQuery q = new VariantMapQuery(getVariantDataSource(), query);
-        return q.execute(params);
-    }
-
-    public List<VariantTranscript> executeVarTranscriptQuery(String query, Object... params) throws Exception {
-        //return VariantTranscriptQuery.execute(variantDAO, query, params);
-        VariantTranscriptQuery q = new VariantTranscriptQuery(getVariantDataSource(), query);
-        return q.execute(params);
     }
 }

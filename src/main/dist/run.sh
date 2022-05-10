@@ -5,9 +5,17 @@
 APPNAME="phenominer-qc-pipeline"
 APPDIR=/home/rgddata/pipelines/$APPNAME
 SERVER=`hostname -s | tr '[a-z]' '[A-Z]'`
-EMAIL_LIST=mtutaj@mcw.edu
+
 if [ "$SERVER" = "REED" ]; then
-  EMAIL_LIST=mtutaj@mcw.edu,slaulede@mcw.edu
+  CURATOR_EMAIL="slaulede@mcw.edu,mtutaj@mcw.edu"
+  DEVELOPER_EMAIL="mtutaj@mcw.edu"
+  RSO_DEVELOPER_EMAIL="sjwang@mcw.edu,mtutaj@mcw.edu"
+  CMO_DEVELOPER_EMAIL="jrsmith@mcw.edu,mtutaj@mcw.edu"
+else
+  CURATOR_EMAIL="mtutaj@mcw.edu"
+  DEVELOPER_EMAIL="mtutaj@mcw.edu"
+  RSO_DEVELOPER_EMAIL="mtutaj@mcw.edu"
+  CMO_DEVELOPER_EMAIL="mtutaj@mcw.edu"
 fi
 
 cd $APPDIR
@@ -16,29 +24,18 @@ java -Dspring.config=$APPDIR/../properties/default_db2.xml \
     -Dlog4j.configurationFile=file://$APPDIR/properties/log4j2.xml \
     -jar lib/$APPNAME.jar "$@" 2>&1 | tee run.log
 
-#VT_MULTIS_FILE="logs/QTLs_with_multiple_VT_annotations_daily.log"
-#if [ -s "$VT_MULTIS_FILE" ]; then
-#    mailx -s "[$SERVER] QTL qc: QTLs with multiple VT annotations." $EMAIL_LIST < $VT_MULTIS_FILE
-#fi
+XCO22_ISSUES_FILE="logs/xco22_duration_daily.log"
+if [ -s "$XCO22_ISSUES_FILE" ]; then
+    mailx -s "[$SERVER] phenominer qc: XCO:0000022 records with duration less than 1 minute" $CURATOR_EMAIL < $XCO22_ISSUES_FILE
+fi
 
-#CMO_MULTIS_FILE="logs/QTLs_with_multiple_CMO_annotations_daily.log"
-#if [ -s "$CMO_MULTIS_FILE" ]; then
-#    mailx -s "[$SERVER] QTL qc: QTLs with multiple CMO annotations." $EMAIL_LIST < $CMO_MULTIS_FILE
-#fi
-
-#mailx -s "[$SERVER] QtlQC pipeline OK" $EMAIL_LIST < run.log
+mailx -s "[$SERVER] phenominer qc pipeline OK" $DEVELOPER_EMAIL < run.log
 
 exit 0
 ######
 # TODO
 ######
 
-SERVER=`hostname -s | tr '[a-z]' '[A-Z]'`
-OUTPUT_FOLDER=sql_output/
-CURATOR_EMAIL=`cat ../../pipeUtils/conf/curator_email.txt`
-DEVELOPER_EMAIL=`cat ../../pipeUtils/conf/developer_email.txt`
-RSO_DEVELOPER_EMAIL=`cat ../../pipeUtils/conf/rso_developer_email.txt`
-CMO_DEVELOPER_EMAIL=`cat ../../pipeUtils/conf/cmo_developer_email.txt`
 
 echo "Check XC:22 duration: less than 1 minute."
 OUTPUT_FILE=$OUTPUT_FOLDER/XCO22_duration_records.tsv

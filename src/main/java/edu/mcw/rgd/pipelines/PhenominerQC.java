@@ -42,11 +42,8 @@ public class PhenominerQC {
         Dao dao = new Dao();
 
         // run queries
-        List<String> multipleCMOAnnots = dao.getMultipleCMOAnnotations();
-        log.info("QTLs with multiple CMO annotations: "+multipleCMOAnnots.size());
-
-        List<String> multipleVTAnnots = dao.getMultipleVTAnnotations();
-        log.info("QTLs with multiple VT annotations: "+multipleVTAnnots.size());
+        List<String> issues = dao.checkXCO22Duration();
+        log.info("XCO:0000022 records with duration less than 1 minute: "+issues.size());
 
         String msg = "=== OK === elapsed "+ Utils.formatElapsedTime(time0, System.currentTimeMillis());
         log.info(msg);
