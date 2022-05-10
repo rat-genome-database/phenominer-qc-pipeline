@@ -7,6 +7,7 @@ import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.core.io.FileSystemResource;
 
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -38,6 +39,9 @@ public class PhenominerQC {
         long time0 = System.currentTimeMillis();
 
         log.info(getVersion());
+
+        SimpleDateFormat sdt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        log.info("   started at "+sdt.format(time0));
 
         Dao dao = new Dao();
 
