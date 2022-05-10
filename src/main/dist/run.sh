@@ -24,36 +24,18 @@ java -Dspring.config=$APPDIR/../properties/default_db2.xml \
     -Dlog4j.configurationFile=file://$APPDIR/properties/log4j2.xml \
     -jar lib/$APPNAME.jar "$@" 2>&1 | tee run.log
 
-XCO22_ISSUES_FILE="logs/xco22_duration_daily.log"
+XCO22_ISSUES_FILE="$APPDIR/logs/xco22_duration_daily.log"
 if [ -s "$XCO22_ISSUES_FILE" ]; then
     mailx -s "[$SERVER] phenominer qc: XCO:0000022 records with duration less than 1 minute" $CURATOR_EMAIL < $XCO22_ISSUES_FILE
 fi
 
-mailx -s "[$SERVER] phenominer qc pipeline OK" $DEVELOPER_EMAIL < run.log
+mailx -s "[$SERVER] phenominer qc pipeline OK" $DEVELOPER_EMAIL < "$APPDIR/logs/summary.log"
 
 exit 0
 ######
 # TODO
 ######
 
-
-echo "Check XC:22 duration: less than 1 minute."
-OUTPUT_FILE=$OUTPUT_FOLDER/XCO22_duration_records.tsv
-$UTILS_HOME/bin/run_sql.sh check_XCO22_duration.sql $OUTPUT_FILE
-
-mailx -s "[$SERVER] Checking XCO:22's durations finished." $DEVELOPER_EMAIL < $OUTPUT_FILE
-WC_RESULT=`wc -l $OUTPUT_FILE | awk '{print $1}'`
-if [[ $WC_RESULT != '1' ]]
-then
-  echo "Emailing result to curator."
-  mailx -s "[$SERVER] Checking XCO:22's durations finished." $CURATOR_EMAIL < $OUTPUT_FILE
-  echo "Update XCO22 records' curation status."
-  $UTILS_HOME/bin/run_sql.sh update_XCO22_duration_status.sql Console
-
-  mailx -s "[$SERVER] Updating status of XCO:22 records." $DEVELOPER_EMAIL < /dev/null
-fi
-
-mv $OUTPUT_FILE ../logs/XCO22_duration_records_$($UTILS_HOME/bin/get_log_date.sh).log
 
 
 echo "Check if there is any null unit conversions."
