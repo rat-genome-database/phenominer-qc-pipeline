@@ -35,7 +35,7 @@ public class Dao {
     public List<String> checkXCO22Duration() throws Exception {
 
         String sql =
-            "select concat('https://reed.rgd.mcw.edu/rgdweb/curation/phenominer/records.html?act=edit', " +
+            "select concat('https://pipelines.rgd.mcw.edu/rgdweb/curation/phenominer/records.html?act=edit', " +
             "  LISTAGG(id_url, '') within group (order by id_url)) as record_urls \n" +
             "from (\n" +
             "SELECT s.STUDY_ID,\n" +
