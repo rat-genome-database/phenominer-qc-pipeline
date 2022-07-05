@@ -1,3 +1,6 @@
+Jul 05, 2022
+  renamed 'master' branch into 'main'
+
 May 10, 2022
   converted to gradle project
   added checking of XCO:0000022 (controlled sodium diet) for durations less than 1 minute
