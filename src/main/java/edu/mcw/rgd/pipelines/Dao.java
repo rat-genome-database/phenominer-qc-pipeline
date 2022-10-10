@@ -22,6 +22,7 @@ public class Dao {
     Logger logInvalidRsoUsage = LogManager.getLogger("invalid_rso_usage");
     Logger logNewStandardUnits = LogManager.getLogger("new_standard_units");
     Logger logCmoMissingStandardUnits = LogManager.getLogger("cmo_missing_standard_units");
+    Logger logUndefinedConversions = LogManager.getLogger("undefined_conversions");
 
     /// XCO22 (controlled sodium diet) duration must be shorter than 1 minute
     public List<String> checkXCO22Duration() throws Exception {
@@ -205,6 +206,26 @@ public class Dao {
         List<String> issues = StringListQuery.execute(adao, sql);
         for( String line: issues ) {
             logCmoMissingStandardUnits.debug(line);
+        }
+        return issues.size();
+    }
+
+    public int getUndefinedUnitConversions() throws Exception {
+        //String sql = "SELECT CM.CLINICAL_MEASUREMENT_ONT_ID, ER.MEASUREMENT_UNITS, SU.STANDARD_UNIT, COUNT(*) AS number_of_records_affected\n" +
+        String sql = "SELECT CM.CLINICAL_MEASUREMENT_ONT_ID||' measurement_units=['||ER.MEASUREMENT_UNITS" +
+                " ||']     standard_unit=['||SU.STANDARD_UNIT||']    number_of_records_affected='||COUNT(*) " +
+
+                "FROM EXPERIMENT_RECORD ER, CLINICAL_MEASUREMENT CM, PHENOMINER_STANDARD_UNITS SU " +
+                "WHERE ER.CLINICAL_MEASUREMENT_ID = CM.CLINICAL_MEASUREMENT_ID " +
+                " AND CM.CLINICAL_MEASUREMENT_ONT_ID = SU.ONT_ID" +
+                " AND er.CURATION_STATUS IN (35,40)" +
+                " AND (ER.MEASUREMENT_UNITS,SU.STANDARD_UNIT) NOT IN (SELECT unit_from, unit_to FROM phenominer_term_unit_scales tus1 WHERE tus1.ont_id=su.ont_id) " +
+                "GROUP BY CM.CLINICAL_MEASUREMENT_ONT_ID, ER.MEASUREMENT_UNITS, SU.STANDARD_UNIT " +
+                "ORDER BY COUNT(*) DESC";
+
+        List<String> issues = StringListQuery.execute(adao, sql);
+        for( String line: issues ) {
+            logUndefinedConversions.debug(line);
         }
         return issues.size();
     }

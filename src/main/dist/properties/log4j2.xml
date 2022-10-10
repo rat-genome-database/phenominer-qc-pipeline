@@ -72,6 +72,17 @@
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} - %m%n"/>
             <ThresholdFilter level="DEBUG" onMatch="ACCEPT" onMismatch="DENY"/>
         </File>
+
+        <RollingFile name="undefined_conversions" append="true" fileName="logs/undefined_conversions.log" filePattern="logs/undefined_conversions.log.%d{yyyy-MM}">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %p [%c] - %m%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+        </RollingFile>
+        <File name="undefined_conversions_daily" append="false" fileName="logs/undefined_conversions_daily.log">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} - %m%n"/>
+            <ThresholdFilter level="DEBUG" onMatch="ACCEPT" onMismatch="DENY"/>
+        </File>
     </Appenders>
 
     <Loggers>
@@ -108,6 +119,11 @@
         <Logger name="cmo_missing_standard_units" level="debug" additivity="false">
             <AppenderRef ref="cmo_missing_standard_units"/>
             <AppenderRef ref="cmo_missing_standard_units_daily"/>
+            <AppenderRef ref="Console" level="info"/>
+        </Logger>
+        <Logger name="undefined_conversions" level="debug" additivity="false">
+            <AppenderRef ref="undefined_conversions"/>
+            <AppenderRef ref="undefined_conversions_daily"/>
             <AppenderRef ref="Console" level="info"/>
         </Logger>
     </Loggers>

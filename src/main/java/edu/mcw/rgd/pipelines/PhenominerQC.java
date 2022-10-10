@@ -61,6 +61,9 @@ public class PhenominerQC {
         int cnt = dao.getCmoTermsWithoutStandardUnits();
         log.info("CMO terms without standard units: "+cnt);
 
+        cnt = dao.getUndefinedUnitConversions();
+        log.info("undefined unit conversions: "+cnt);
+
         String msg = "=== OK === elapsed "+ Utils.formatElapsedTime(time0, System.currentTimeMillis());
         log.info(msg);
     }

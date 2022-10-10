@@ -49,6 +49,11 @@ if [ -s "$CMO_MISSING_STD_UNITS_FILE" ]; then
     mailx -s "[$SERVER] phenominer qc: CMO terms missing standard units" $CMO_DEVELOPER_EMAIL < $CMO_MISSING_STD_UNITS_FILE
 fi
 
+UNDEFINED_CONVERSIONS_FILE="$APPDIR/logs/undefined_conversions_daily.log"
+if [ -s "$UNDEFINED_CONVERSIONS_FILE" ]; then
+    mailx -s "[$SERVER] phenominer qc: undefined unit conversions" $CMO_DEVELOPER_EMAIL < $UNDEFINED_CONVERSIONS_FILE
+fi
+
 mailx -s "[$SERVER] phenominer qc pipeline OK" $DEVELOPER_EMAIL < "$APPDIR/logs/summary.log"
 
 exit 0
