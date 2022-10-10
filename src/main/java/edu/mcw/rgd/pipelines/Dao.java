@@ -127,18 +127,18 @@ public class Dao {
     }
 
     public List<StringMapQuery.MapPair> getCmoTermsWithoutStdUnits() throws Exception{
-        String sql = "SELECT DISTINCT CLINICAL_MEASUREMENT_ONT_ID AS ont_id, er.MEASUREMENT_UNITS\n" +
-                "FROM CLINICAL_MEASUREMENT cm, EXPERIMENT_RECORD er\n" +
-                "WHERE er.CLINICAL_MEASUREMENT_ID = cm.CLINICAL_MEASUREMENT_ID\n" +
-                "AND cm.CLINICAL_MEASUREMENT_ONT_ID IN (\n" +
-                "        SELECT ont_id FROM\n" +
-                "            (  SELECT DISTINCT CLINICAL_MEASUREMENT_ONT_ID AS ont_id, er.MEASUREMENT_UNITS\n" +
-                "                FROM CLINICAL_MEASUREMENT cm, EXPERIMENT_RECORD er\n" +
-                "                WHERE er.CLINICAL_MEASUREMENT_ID = cm.CLINICAL_MEASUREMENT_ID AND er.CURATION_STATUS=40\n" +
-                "                 AND cm.CLINICAL_MEASUREMENT_ONT_ID NOT IN (SELECT psu.ont_id FROM PHENOMINER_STANDARD_UNITS psu)\n" +
-                "                ) a\n" +
+        String sql = "SELECT DISTINCT CLINICAL_MEASUREMENT_ONT_ID AS ont_id, er.MEASUREMENT_UNITS " +
+                "FROM CLINICAL_MEASUREMENT cm, EXPERIMENT_RECORD er " +
+                "WHERE er.CLINICAL_MEASUREMENT_ID = cm.CLINICAL_MEASUREMENT_ID " +
+                "AND cm.CLINICAL_MEASUREMENT_ONT_ID IN ( " +
+                "        SELECT ont_id FROM " +
+                "            ( SELECT DISTINCT CLINICAL_MEASUREMENT_ONT_ID AS ont_id, er.MEASUREMENT_UNITS" +
+                "                FROM CLINICAL_MEASUREMENT cm, EXPERIMENT_RECORD er" +
+                "                WHERE er.CLINICAL_MEASUREMENT_ID = cm.CLINICAL_MEASUREMENT_ID AND er.CURATION_STATUS=40" +
+                "                 AND cm.CLINICAL_MEASUREMENT_ONT_ID NOT IN (SELECT psu.ont_id FROM PHENOMINER_STANDARD_UNITS psu)" +
+                "            ) a" +
                 "        GROUP BY a.ont_id\n" +
-                "        HAVING COUNT(*) = 1 );";
+                "        HAVING COUNT(*) = 1 )";
         return StringMapQuery.execute(adao, sql);
     }
 
