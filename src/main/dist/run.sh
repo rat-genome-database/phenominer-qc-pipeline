@@ -52,11 +52,6 @@ exit 0
 ######
 
 
-echo "Update and insert records for common unit conversions."
-OUTPUT_FILE=$OUTPUT_FOLDER/common_unit_conversions.tsv
-$UTILS_HOME/bin/run_sql.sh update_unit_conversion_table.sql $OUTPUT_FILE
-#mailx -s "[$SERVER] Common unit conversions updated." $CMO_DEVELOPER_EMAIL < $OUTPUT_FILE
-
 echo "Get CMO terms without standard units."
 OUTPUT_FILE=$OUTPUT_FOLDER/CMO_terms_missing_standard_units.tsv
 $UTILS_HOME/bin/run_sql.sh get_missing_standard_units.sql $OUTPUT_FILE

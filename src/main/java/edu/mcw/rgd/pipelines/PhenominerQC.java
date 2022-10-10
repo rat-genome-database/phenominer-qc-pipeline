@@ -81,6 +81,10 @@ public class PhenominerQC {
         log.info("potential new standard units: "+cmoTermsWithoutStdUnits.size());
         log.info("   new standard units inserted: "+stdUnitsInserted);
         log.info("   new unit scales inserted: "+unitScalesInserted);
+
+        // Update and insert records for common unit conversions
+        int cnt = dao.updatePhenominerTermUnitScales();
+        log.info("PHENOMINER_TERM_UNIT_SCALES updated: "+cnt +" rows");
     }
 
     public void setVersion(String version) {

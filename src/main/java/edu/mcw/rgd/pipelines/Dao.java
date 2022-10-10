@@ -166,4 +166,25 @@ public class Dao {
         adao.update(sql, ontId, stdUnit, stdUnit);
         return true;
     }
+
+    public int updatePhenominerTermUnitScales() throws Exception {
+        // Update PHENOMINER_TERM_UNIT_SCALES with PHENOMINER_STANDARD_UNITS
+        String sql1 = "update PHENOMINER_TERM_UNIT_SCALES tus " +
+                "set (tus.UNIT_TO)= (select us.STANDARD_UNIT from PHENOMINER_STANDARD_UNITS us where us.ONT_ID=tus.ONT_ID) " +
+                "where (tus.ONT_ID) in" +
+                "(select us.ONT_ID from PHENOMINER_STANDARD_UNITS us)";
+        int cnt1 = adao.update(sql1);
+
+        // add to PHENOMINER_TERM_UNIT_SCALES for new records in PHENOMINER_UNIT_SCALES
+        String sql2 =
+                "INSERT INTO PHENOMINER_TERM_UNIT_SCALES " +
+                "SELECT UNIQUE CM.CLINICAL_MEASUREMENT_ONT_ID,ER.MEASUREMENT_UNITS,SU.STANDARD_UNIT,US.SCALE,US.ZERO_OFFSET " +
+                "FROM EXPERIMENT_RECORD ER, CLINICAL_MEASUREMENT CM,PHENOMINER_STANDARD_UNITS SU, PHENOMINER_UNIT_SCALES US " +
+                "WHERE ER.CLINICAL_MEASUREMENT_ID = CM.CLINICAL_MEASUREMENT_ID AND CM.CLINICAL_MEASUREMENT_ONT_ID = SU.ONT_ID "+
+                "  AND ER.MEASUREMENT_UNITS = US.UNIT_FROM AND SU.STANDARD_UNIT = US.UNIT_TO " +
+                "  AND (ER.MEASUREMENT_UNITS,SU.STANDARD_UNIT) not in (" +
+                "      select unit_from, unit_to from phenominer_term_unit_scales tus1 where tus1.ont_id=su.ont_id)";
+        int cnt2 = adao.update(sql2);
+        return cnt1+cnt2;
+    }
 }
