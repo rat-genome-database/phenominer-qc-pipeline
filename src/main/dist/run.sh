@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shell script to run PhenominerQC Pipeline
+# shell script to run 'phenominer-qc-pipeline'
 . /etc/profile
 
 APPNAME="phenominer-qc-pipeline"
@@ -39,6 +39,11 @@ if [ -s "$INVALID_RSO_USAGE_FILE" ]; then
     mailx -s "[$SERVER] phenominer qc: RSO term(s) used without valid RGD ID" $RSO_DEVELOPER_EMAIL < $INVALID_RSO_USAGE_FILE
 fi
 
+NEW_STD_UNITS_FILE="$APPDIR/logs/new_standard_units_daily.log"
+if [ -s "$NEW_STD_UNITS_FILE" ]; then
+    mailx -s "[$SERVER] phenominer qc: new standard units inserted" $CMO_DEVELOPER_EMAIL < $NEW_STD_UNITS_FILE
+fi
+
 mailx -s "[$SERVER] phenominer qc pipeline OK" $DEVELOPER_EMAIL < "$APPDIR/logs/summary.log"
 
 exit 0
@@ -46,11 +51,6 @@ exit 0
 # TODO
 ######
 
-
-echo "Add standard units based on existing records."
-OUTPUT_FILE=$OUTPUT_FOLDER/new_standard_units.tsv
-$UTILS_HOME/bin/run_sql.sh add_standard_units_based_on_existing_records.sql $OUTPUT_FILE
-#mailx -s "[$SERVER] Common unit conversions updated." $CMO_DEVELOPER_EMAIL < $OUTPUT_FILE
 
 echo "Update and insert records for common unit conversions."
 OUTPUT_FILE=$OUTPUT_FOLDER/common_unit_conversions.tsv
@@ -71,6 +71,4 @@ echo "Calculate SEM, SD or number of animals given the other two."
 OUTPUT_FILE=$OUTPUT_FOLDER/SEM_SD_NOA_results.tsv
 $UTILS_HOME/bin/run_sql.sh update_sem_sd_noa.sql $OUTPUT_FILE
 mailx -s "[$SERVER] Calculate SEM, SD or NOA." $DEVELOPER_EMAIL < $OUTPUT_FILE
-
-mv $OUTPUT_FILE ../logs/null_unit_conversions_$($UTILS_HOME/bin/get_log_date.sh).log
 

@@ -1,5 +1,6 @@
 package edu.mcw.rgd.pipelines;
 
+import edu.mcw.rgd.dao.spring.StringMapQuery;
 import edu.mcw.rgd.process.Utils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -55,9 +56,23 @@ public class PhenominerQC {
         issues = dao.checkInvalidRsoUsage();
         log.info("invalid RSO usages:   "+issues.size());
 
+        addStandardUnitsBasedOnExistingRecords(dao);
 
         String msg = "=== OK === elapsed "+ Utils.formatElapsedTime(time0, System.currentTimeMillis());
         log.info(msg);
+    }
+
+    void addStandardUnitsBasedOnExistingRecords(Dao dao) throws Exception {
+
+        List<StringMapQuery.MapPair> cmoTermsWithoutStdUnits = dao.getCmoTermsWithoutStdUnits();
+        for( StringMapQuery.MapPair pair: cmoTermsWithoutStdUnits ) {
+
+            String cmoId = pair.keyValue;
+            String unit = pair.stringValue;
+            dao.insertStandardUnit(cmoId, unit);
+            dao.insertUnitScales(cmoId, unit);
+        }
+        log.info("inserted standard units based on existing records: "+cmoTermsWithoutStdUnits.size());
     }
 
     public void setVersion(String version) {

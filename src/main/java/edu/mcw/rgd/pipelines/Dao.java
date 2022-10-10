@@ -1,20 +1,11 @@
 package edu.mcw.rgd.pipelines;
 
 import edu.mcw.rgd.dao.AbstractDAO;
-import edu.mcw.rgd.dao.DataSourceFactory;
-import edu.mcw.rgd.dao.impl.MapDAO;
-import edu.mcw.rgd.dao.impl.variants.VariantDAO;
 import edu.mcw.rgd.dao.spring.StringListQuery;
-import edu.mcw.rgd.dao.spring.variants.VariantMapQuery;
-import edu.mcw.rgd.dao.spring.variants.VariantSampleQuery;
-import edu.mcw.rgd.datamodel.variants.VariantMapData;
-import edu.mcw.rgd.datamodel.variants.VariantSampleDetail;
+import edu.mcw.rgd.dao.spring.StringMapQuery;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.jdbc.core.SqlParameter;
 
-import javax.sql.DataSource;
-import java.sql.Types;
 import java.util.List;
 
 /**
@@ -29,6 +20,7 @@ public class Dao {
     Logger logXCO22Duration = LogManager.getLogger("xco22_duration");
     Logger logNullUnitConversions = LogManager.getLogger("null_unit_conversion");
     Logger logInvalidRsoUsage = LogManager.getLogger("invalid_rso_usage");
+    Logger logNewStandardUnits = LogManager.getLogger("new_standard_units");
 
     /// XCO22 (controlled sodium diet) duration must be shorter than 1 minute
     public List<String> checkXCO22Duration() throws Exception {
@@ -134,37 +126,31 @@ public class Dao {
         return issues;
     }
 
-
-
-
-
-
-    edu.mcw.rgd.dao.impl.variants.VariantDAO variantDAO = new VariantDAO();
-
-    MapDAO mapDAO = new MapDAO();
-    public String getConnectionInfo() {
-        return variantDAO.getConnectionInfo();
+    public List<StringMapQuery.MapPair> getCmoTermsWithoutStdUnits() throws Exception{
+        String sql = "SELECT DISTINCT CLINICAL_MEASUREMENT_ONT_ID AS ont_id, er.MEASUREMENT_UNITS\n" +
+                "FROM CLINICAL_MEASUREMENT cm, EXPERIMENT_RECORD er\n" +
+                "WHERE er.CLINICAL_MEASUREMENT_ID = cm.CLINICAL_MEASUREMENT_ID\n" +
+                "AND cm.CLINICAL_MEASUREMENT_ONT_ID IN (\n" +
+                "        SELECT ont_id FROM\n" +
+                "            (  SELECT DISTINCT CLINICAL_MEASUREMENT_ONT_ID AS ont_id, er.MEASUREMENT_UNITS\n" +
+                "                FROM CLINICAL_MEASUREMENT cm, EXPERIMENT_RECORD er\n" +
+                "                WHERE er.CLINICAL_MEASUREMENT_ID = cm.CLINICAL_MEASUREMENT_ID AND er.CURATION_STATUS=40\n" +
+                "                 AND cm.CLINICAL_MEASUREMENT_ONT_ID NOT IN (SELECT psu.ont_id FROM PHENOMINER_STANDARD_UNITS psu)\n" +
+                "                ) a\n" +
+                "        GROUP BY a.ont_id\n" +
+                "        HAVING COUNT(*) = 1 );";
+        return StringMapQuery.execute(adao, sql);
     }
 
-    public DataSource getVariantDataSource() throws Exception {
-        return DataSourceFactory.getInstance().getCarpeNovoDataSource();
+    public void insertStandardUnit(String ontId, String stdUnit) throws Exception {
+        String sql = "INSERT INTO PHENOMINER_STANDARD_UNITS (ont_id, standard_unit) VALUES(?,?)";
+        adao.update(sql, ontId, stdUnit);
+        logNewStandardUnits.info("new standard unit: "+ontId+" "+stdUnit);
     }
 
-    public List<VariantMapData> getVariants(int speciesTypeKey, int mapKey, String chr) throws Exception{
-        String sql = "SELECT * FROM variant v inner join variant_map_data vm on v.rgd_id = vm. rgd_id WHERE v.species_type_key = ? and vm.map_key = ? and vm.chromosome=?";
-
-        VariantMapQuery q = new VariantMapQuery(getVariantDataSource(), sql);
-        q.declareParameter(new SqlParameter(Types.INTEGER));
-        q.declareParameter(new SqlParameter(Types.INTEGER));
-        q.declareParameter(new SqlParameter(Types.VARCHAR));
-        return q.execute(speciesTypeKey, mapKey, chr);
-    }
-
-    public List<VariantSampleDetail> getSampleIds(int mapKey, String chr) throws Exception{
-        String sql = "select vs.* from variant_sample_detail vs inner join variant_map_data vm on vm.rgd_id = vs.rgd_id and vm.map_key=? and vm.chromosome = ?";
-        VariantSampleQuery q = new VariantSampleQuery(this.getVariantDataSource(), sql);
-        q.declareParameter(new SqlParameter(Types.INTEGER));
-        q.declareParameter(new SqlParameter(Types.VARCHAR));
-        return q.execute(mapKey, chr);
+    public void insertUnitScales(String ontId, String stdUnit) throws Exception {
+        String sql = "INSERT INTO PHENOMINER_TERM_UNIT_SCALES (ont_id, unit_from, unit_to, term_specific_scale, zero_offset) "+
+                "VALUES(?, ?, ?, 1, 0)";
+        adao.update(sql, ontId, stdUnit, stdUnit);
     }
 }

@@ -50,6 +50,17 @@
         <File name="invalid_rso_usage_daily" append="false" fileName="logs/invalid_rso_usage_daily.log">
             <ThresholdFilter level="DEBUG" onMatch="ACCEPT" onMismatch="DENY"/>
         </File>
+
+        <RollingFile name="new_standard_units" append="true" fileName="logs/new_standard_units.log" filePattern="logs/new_standard_units.log.%d{yyyy-MM}">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %p [%c] - %m%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+        </RollingFile>
+        <File name="new_standard_units_daily" append="false" fileName="logs/new_standard_units_daily.log">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} - %m%n"/>
+            <ThresholdFilter level="DEBUG" onMatch="ACCEPT" onMismatch="DENY"/>
+        </File>
     </Appenders>
 
     <Loggers>
@@ -76,6 +87,11 @@
         <Logger name="invalid_rso_usage" level="debug" additivity="false">
             <AppenderRef ref="invalid_rso_usage"/>
             <AppenderRef ref="invalid_rso_usage_daily"/>
+            <AppenderRef ref="Console" level="info"/>
+        </Logger>
+        <Logger name="new_standard_units" level="debug" additivity="false">
+            <AppenderRef ref="new_standard_units"/>
+            <AppenderRef ref="new_standard_units_daily"/>
             <AppenderRef ref="Console" level="info"/>
         </Logger>
     </Loggers>
