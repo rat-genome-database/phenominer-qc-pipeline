@@ -10,7 +10,7 @@ if [ "$SERVER" = "REED" ]; then
   CURATOR_EMAIL="slaulede@mcw.edu,mtutaj@mcw.edu"
   DEVELOPER_EMAIL="mtutaj@mcw.edu"
   RSO_DEVELOPER_EMAIL="sjwang@mcw.edu,mtutaj@mcw.edu"
-  CMO_DEVELOPER_EMAIL="jrsmith@mcw.edu,mtutaj@mcw.edu"
+  CMO_DEVELOPER_EMAIL="slaulede@mcw.edu,jrsmith@mcw.edu,mtutaj@mcw.edu"
 else
   CURATOR_EMAIL="mtutaj@mcw.edu"
   DEVELOPER_EMAIL="mtutaj@mcw.edu"
