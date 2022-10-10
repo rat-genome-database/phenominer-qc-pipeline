@@ -142,15 +142,28 @@ public class Dao {
         return StringMapQuery.execute(adao, sql);
     }
 
-    public void insertStandardUnit(String ontId, String stdUnit) throws Exception {
+    public boolean insertStandardUnit(String ontId, String stdUnit) throws Exception {
+        String sql0 = "SELECT COUNT(*) FROM PHENOMINER_STANDARD_UNITS WHERE ont_id=? AND standard_unit=?";
+        int cnt = adao.getCount(sql0, ontId, stdUnit);
+        if( cnt!=0 ) {
+            return false; // already in table
+        }
         String sql = "INSERT INTO PHENOMINER_STANDARD_UNITS (ont_id, standard_unit) VALUES(?,?)";
-        adao.update(sql, ontId, stdUnit);
         logNewStandardUnits.info("new standard unit: "+ontId+" "+stdUnit);
+        adao.update(sql, ontId, stdUnit);
+        return true;
     }
 
-    public void insertUnitScales(String ontId, String stdUnit) throws Exception {
+    public boolean insertUnitScales(String ontId, String stdUnit) throws Exception {
+        String sql0 = "SELECT COUNT(*) FROM PHENOMINER_TERM_UNIT_SCALES WHERE ont_id=? AND unit_from=? AND unit_to=? AND term_specific_scale=1 AND zero_offset=0";
+        int cnt = adao.getCount(sql0, ontId, stdUnit, stdUnit);
+        if( cnt!=0 ) {
+            return false; // already in table
+        }
         String sql = "INSERT INTO PHENOMINER_TERM_UNIT_SCALES (ont_id, unit_from, unit_to, term_specific_scale, zero_offset) "+
                 "VALUES(?, ?, ?, 1, 0)";
+        logNewStandardUnits.info("new unit scales:  term:"+ontId+" from:"+stdUnit+" to:"+stdUnit+", term_specific_scale=1, zero_offset=0");
         adao.update(sql, ontId, stdUnit, stdUnit);
+        return true;
     }
 }

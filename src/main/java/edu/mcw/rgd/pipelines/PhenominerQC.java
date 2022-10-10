@@ -64,15 +64,23 @@ public class PhenominerQC {
 
     void addStandardUnitsBasedOnExistingRecords(Dao dao) throws Exception {
 
+        int stdUnitsInserted = 0;
+        int unitScalesInserted = 0;
         List<StringMapQuery.MapPair> cmoTermsWithoutStdUnits = dao.getCmoTermsWithoutStdUnits();
         for( StringMapQuery.MapPair pair: cmoTermsWithoutStdUnits ) {
 
             String cmoId = pair.keyValue;
             String unit = pair.stringValue;
-            dao.insertStandardUnit(cmoId, unit);
-            dao.insertUnitScales(cmoId, unit);
+            if( dao.insertUnitScales(cmoId, unit) ) {
+                unitScalesInserted++;
+            }
+            if( dao.insertStandardUnit(cmoId, unit) ) {
+                stdUnitsInserted++;
+            }
         }
-        log.info("inserted standard units based on existing records: "+cmoTermsWithoutStdUnits.size());
+        log.info("potential new standard units: "+cmoTermsWithoutStdUnits.size());
+        log.info("   new standard units inserted: "+stdUnitsInserted);
+        log.info("   new unit scales inserted: "+unitScalesInserted);
     }
 
     public void setVersion(String version) {
