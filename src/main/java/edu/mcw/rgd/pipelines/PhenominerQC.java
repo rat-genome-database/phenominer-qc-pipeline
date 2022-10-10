@@ -64,6 +64,8 @@ public class PhenominerQC {
         cnt = dao.getUndefinedUnitConversions();
         log.info("undefined unit conversions: "+cnt);
 
+        dao.updateSemSdNoa();
+
         String msg = "=== OK === elapsed "+ Utils.formatElapsedTime(time0, System.currentTimeMillis());
         log.info(msg);
     }

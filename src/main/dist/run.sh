@@ -54,21 +54,9 @@ if [ -s "$UNDEFINED_CONVERSIONS_FILE" ]; then
     mailx -s "[$SERVER] phenominer qc: undefined unit conversions" $CMO_DEVELOPER_EMAIL < $UNDEFINED_CONVERSIONS_FILE
 fi
 
+SEM_SD_NOA_FILE="$APPDIR/logs/sem_sd_noa_daily.log"
+if [ -s "$SEM_SD_NOA_FILE" ]; then
+    mailx -s "[$SERVER] phenominer qc: SEM, SD, NOA report" $CMO_DEVELOPER_EMAIL < $SEM_SD_NOA_FILE
+fi
+
 mailx -s "[$SERVER] phenominer qc pipeline OK" $DEVELOPER_EMAIL < "$APPDIR/logs/summary.log"
-
-exit 0
-######
-# TODO
-######
-
-
-echo "Get undefined unit conversions."
-OUTPUT_FILE=$OUTPUT_FOLDER/undefined_conversions.tsv
-$UTILS_HOME/bin/run_sql.sh get_not_convertible_units.sql $OUTPUT_FILE
-mailx -s "[$SERVER] Undefined unit conversions." $CMO_DEVELOPER_EMAIL < $OUTPUT_FILE
-
-echo "Calculate SEM, SD or number of animals given the other two."
-OUTPUT_FILE=$OUTPUT_FOLDER/SEM_SD_NOA_results.tsv
-$UTILS_HOME/bin/run_sql.sh update_sem_sd_noa.sql $OUTPUT_FILE
-mailx -s "[$SERVER] Calculate SEM, SD or NOA." $DEVELOPER_EMAIL < $OUTPUT_FILE
-

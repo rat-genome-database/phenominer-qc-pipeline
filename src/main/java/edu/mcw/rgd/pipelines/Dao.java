@@ -23,6 +23,7 @@ public class Dao {
     Logger logNewStandardUnits = LogManager.getLogger("new_standard_units");
     Logger logCmoMissingStandardUnits = LogManager.getLogger("cmo_missing_standard_units");
     Logger logUndefinedConversions = LogManager.getLogger("undefined_conversions");
+    Logger logSemSdNoa = LogManager.getLogger("sem_sd_noa");
 
     /// XCO22 (controlled sodium diet) duration must be shorter than 1 minute
     public List<String> checkXCO22Duration() throws Exception {
@@ -226,6 +227,67 @@ public class Dao {
         List<String> issues = StringListQuery.execute(adao, sql);
         for( String line: issues ) {
             logUndefinedConversions.debug(line);
+        }
+        return issues.size();
+    }
+
+    public int updateSemSdNoa() throws Exception {
+        String sql = "update" +
+                "  (select MEASUREMENT_SEM, MEASUREMENT_SD, NUMBER_OF_ANIMALS" +
+                "   from EXPERIMENT_RECORD er, SAMPLE sa" +
+                "   where" +
+                "      er.SAMPLE_ID = sa.SAMPLE_ID and" +
+                "      not er.MEASUREMENT_SD is null and" +
+                "      er.MEASUREMENT_SEM is null and" +
+                "      sa.NUMBER_OF_ANIMALS > 0 and" +
+                "      er.CURATION_STATUS = 40" +
+                "  ) a " +
+                "set MEASUREMENT_SEM=MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS)";
+        adao.update(sql);
+
+        sql = "update" +
+                " (select MEASUREMENT_SEM, MEASUREMENT_SD, NUMBER_OF_ANIMALS" +
+                "  from EXPERIMENT_RECORD er, SAMPLE sa" +
+                "  where" +
+                "    er.SAMPLE_ID = sa.SAMPLE_ID and" +
+                "    er.MEASUREMENT_SD is null and" +
+                "    not er.MEASUREMENT_SEM is null and" +
+                "    sa.NUMBER_OF_ANIMALS > 0 and" +
+                "    er.CURATION_STATUS = 40" +
+                "  ) a " +
+                "set MEASUREMENT_SD=MEASUREMENT_SEM*sqrt(NUMBER_OF_ANIMALS)";
+        adao.update(sql);
+
+        sql = "update" +
+                " (select MEASUREMENT_SEM, MEASUREMENT_SD, NUMBER_OF_ANIMALS" +
+                "  from EXPERIMENT_RECORD er, SAMPLE sa" +
+                "  where" +
+                "    er.SAMPLE_ID = sa.SAMPLE_ID and" +
+                "    NOT er.MEASUREMENT_SD is null and" +
+                "    not er.MEASUREMENT_SEM is null and" +
+                "    sa.NUMBER_OF_ANIMALS = 0 and" +
+                "    er.CURATION_STATUS = 40" +
+                "  ) a " +
+                "set NUMBER_OF_ANIMALS=round(power(MEASUREMENT_SD / MEASUREMENT_SEM, 2))";
+        adao.update(sql);
+
+
+        //sql = "select MEASUREMENT_SEM, MEASUREMENT_SD, NUMBER_OF_ANIMALS, MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS) as a, round(MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS)*" +
+        //        "    power(10,ceil(log(10,MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS)))+4))/power(10,ceil(log(10,MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS)))+4) as b" +
+        sql = "select MEASUREMENT_SEM||'|'||MEASUREMENT_SD||'|'||NUMBER_OF_ANIMALS||'|'||MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS)||'|'||round(MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS)*" +
+                "    power(10,ceil(log(10,MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS)))+4))/power(10,ceil(log(10,MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS)))+4)" +
+
+                "  from EXPERIMENT_RECORD er, SAMPLE sa" +
+                "  where" +
+                "    er.SAMPLE_ID = sa.SAMPLE_ID and" +
+                "    not er.MEASUREMENT_SD is null and" +
+                "    er.MEASUREMENT_SEM is null and" +
+                "    sa.NUMBER_OF_ANIMALS > 0 and" +
+                "    er.CURATION_STATUS = 40";
+
+        List<String> issues = StringListQuery.execute(adao, sql);
+        for( String line: issues ) {
+            logSemSdNoa.debug(line);
         }
         return issues.size();
     }

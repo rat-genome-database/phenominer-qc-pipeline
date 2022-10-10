@@ -83,6 +83,17 @@
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} - %m%n"/>
             <ThresholdFilter level="DEBUG" onMatch="ACCEPT" onMismatch="DENY"/>
         </File>
+
+        <RollingFile name="sem_sd_noa" append="true" fileName="logs/sem_sd_noa.log" filePattern="logs/sem_sd_noa.log.%d{yyyy-MM}">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %p [%c] - %m%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1"/>
+            </Policies>
+        </RollingFile>
+        <File name="sem_sd_noa_daily" append="false" fileName="logs/sem_sd_noa_daily.log">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} - %m%n"/>
+            <ThresholdFilter level="DEBUG" onMatch="ACCEPT" onMismatch="DENY"/>
+        </File>
     </Appenders>
 
     <Loggers>
@@ -124,6 +135,11 @@
         <Logger name="undefined_conversions" level="debug" additivity="false">
             <AppenderRef ref="undefined_conversions"/>
             <AppenderRef ref="undefined_conversions_daily"/>
+            <AppenderRef ref="Console" level="info"/>
+        </Logger>
+        <Logger name="sem_sd_noa" level="debug" additivity="false">
+            <AppenderRef ref="sem_sd_noa"/>
+            <AppenderRef ref="sem_sd_noa_daily"/>
             <AppenderRef ref="Console" level="info"/>
         </Logger>
     </Loggers>
