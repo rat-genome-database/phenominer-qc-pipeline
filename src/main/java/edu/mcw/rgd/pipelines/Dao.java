@@ -21,6 +21,7 @@ public class Dao {
     Logger logNullUnitConversions = LogManager.getLogger("null_unit_conversion");
     Logger logInvalidRsoUsage = LogManager.getLogger("invalid_rso_usage");
     Logger logNewStandardUnits = LogManager.getLogger("new_standard_units");
+    Logger logCmoMissingStandardUnits = LogManager.getLogger("cmo_missing_standard_units");
 
     /// XCO22 (controlled sodium diet) duration must be shorter than 1 minute
     public List<String> checkXCO22Duration() throws Exception {
@@ -186,5 +187,25 @@ public class Dao {
                 "      select unit_from, unit_to from phenominer_term_unit_scales tus1 where tus1.ont_id=su.ont_id)";
         int cnt2 = adao.update(sql2);
         return cnt1+cnt2;
+    }
+
+    public int getCmoTermsWithoutStandardUnits() throws Exception {
+        String sql = "SELECT a.ont_id||' '''||ot.TERM||'''   record_count='||a.record_count " +
+                "FROM (" +
+                "  SELECT CLINICAL_MEASUREMENT_ONT_ID AS ont_id, COUNT(*) AS record_count" +
+                "  FROM CLINICAL_MEASUREMENT cm, EXPERIMENT_RECORD er" +
+                "  WHERE er.CLINICAL_MEASUREMENT_ID = cm.CLINICAL_MEASUREMENT_ID" +
+                "   AND er.CURATION_STATUS=40" +
+                "   AND cm.CLINICAL_MEASUREMENT_ONT_ID NOT IN (SELECT psu.ont_id FROM PHENOMINER_STANDARD_UNITS psu)" +
+                "  GROUP BY CLINICAL_MEASUREMENT_ONT_ID) a " +
+                "LEFT JOIN ONT_TERMS ot " +
+                "ON a.ont_id = ot.TERM_ACC " +
+                "ORDER BY a.record_count DESC";
+
+        List<String> issues = StringListQuery.execute(adao, sql);
+        for( String line: issues ) {
+            logCmoMissingStandardUnits.debug(line);
+        }
+        return issues.size();
     }
 }

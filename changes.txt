@@ -1,6 +1,7 @@
 Oct 10, 2022
   new standard units are added based on existing data
   update unit scales for common unit conversions
+  added reporting of CMO terms without standard units
 
 Jul 05, 2022
   renamed 'master' branch into 'main'

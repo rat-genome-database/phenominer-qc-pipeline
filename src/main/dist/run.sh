@@ -44,6 +44,11 @@ if [ -s "$NEW_STD_UNITS_FILE" ]; then
     mailx -s "[$SERVER] phenominer qc: new standard units inserted" $CMO_DEVELOPER_EMAIL < $NEW_STD_UNITS_FILE
 fi
 
+CMO_MISSING_STD_UNITS_FILE="$APPDIR/logs/cmo_missing_standard_units_daily.log"
+if [ -s "$CMO_MISSING_STD_UNITS_FILE" ]; then
+    mailx -s "[$SERVER] phenominer qc: CMO terms missing standard units" $CMO_DEVELOPER_EMAIL < $CMO_MISSING_STD_UNITS_FILE
+fi
+
 mailx -s "[$SERVER] phenominer qc pipeline OK" $DEVELOPER_EMAIL < "$APPDIR/logs/summary.log"
 
 exit 0
@@ -51,11 +56,6 @@ exit 0
 # TODO
 ######
 
-
-echo "Get CMO terms without standard units."
-OUTPUT_FILE=$OUTPUT_FOLDER/CMO_terms_missing_standard_units.tsv
-$UTILS_HOME/bin/run_sql.sh get_missing_standard_units.sql $OUTPUT_FILE
-mailx -s "[$SERVER] CMO terms without standard units." $CMO_DEVELOPER_EMAIL < $OUTPUT_FILE
 
 echo "Get undefined unit conversions."
 OUTPUT_FILE=$OUTPUT_FOLDER/undefined_conversions.tsv
