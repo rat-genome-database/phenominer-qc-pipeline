@@ -1,3 +1,6 @@
+Jan 13, 2023
+  updated build.gradle to be gradle 6.x + compatible
+
 Oct 10, 2022
   new standard units are added based on existing data
   update unit scales for common unit conversions
