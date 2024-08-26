@@ -86,11 +86,12 @@ public class Dao {
     /// validate table PHENOMINER_TERM_UNIT_SCALES
     public List<String> checkUnitConversionsForNulls() throws Exception {
 
-        String sql =
-        "select ONT_ID || '  UNIT_FROM[ ' ||unit_from||' ] UNIT_TO[ '||unit_to||' ]  TERM_SPECIFIC_SCALE[ '||term_specific_scale||' ] ZERO_OFFSET[ '||zero_offset||' ]'\n" +
-            "from PHENOMINER_TERM_UNIT_SCALES ptus\n" +
-            "where ptus.TERM_SPECIFIC_SCALE is null\n" +
-            "or ptus.ZERO_OFFSET is null";
+        String sql = """
+            select ONT_ID || '  UNIT_FROM[ ' ||unit_from||' ] UNIT_TO[ '||unit_to||' ]  TERM_SPECIFIC_SCALE[ '||term_specific_scale||' ] ZERO_OFFSET[ '||zero_offset||' ]'
+            from PHENOMINER_TERM_UNIT_SCALES ptus
+            where ptus.TERM_SPECIFIC_SCALE is null
+               or ptus.ZERO_OFFSET is null
+            """;
 
         List<String> issues = StringListQuery.execute(adao, sql);
         if( !issues.isEmpty() ) {

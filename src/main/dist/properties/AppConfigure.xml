@@ -2,6 +2,6 @@
 
 <beans>
     <bean id="manager" class="edu.mcw.rgd.pipelines.PhenominerQC" >
-        <property name="version" value="PhenominerQC Pipeline  -- build Jan 30, 2024" />
+        <property name="version" value="PhenominerQC Pipeline  -- build Aug 26, 2024" />
     </bean>
 </beans>
