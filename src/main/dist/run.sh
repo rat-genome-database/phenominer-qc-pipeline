@@ -7,10 +7,10 @@ APPDIR=/home/rgddata/pipelines/$APPNAME
 SERVER=`hostname -s | tr '[a-z]' '[A-Z]'`
 
 if [ "$SERVER" = "REED" ]; then
-  CURATOR_EMAIL="slaulede@mcw.edu,mtutaj@mcw.edu"
+  CURATOR_EMAIL="slaulede@mcw.edu mtutaj@mcw.edu"
   DEVELOPER_EMAIL="mtutaj@mcw.edu"
-  RSO_DEVELOPER_EMAIL="sjwang@mcw.edu,mtutaj@mcw.edu"
-  CMO_DEVELOPER_EMAIL="slaulede@mcw.edu,jrsmith@mcw.edu,mtutaj@mcw.edu"
+  RSO_DEVELOPER_EMAIL="sjwang@mcw.edu mtutaj@mcw.edu"
+  CMO_DEVELOPER_EMAIL="slaulede@mcw.edu jrsmith@mcw.edu mtutaj@mcw.edu"
 else
   CURATOR_EMAIL="mtutaj@mcw.edu"
   DEVELOPER_EMAIL="mtutaj@mcw.edu"
