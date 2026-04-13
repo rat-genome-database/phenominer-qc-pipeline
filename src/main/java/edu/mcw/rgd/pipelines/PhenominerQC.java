@@ -1,6 +1,7 @@
 package edu.mcw.rgd.pipelines;
 
 import edu.mcw.rgd.dao.spring.StringMapQuery;
+import edu.mcw.rgd.process.MemoryMonitor;
 import edu.mcw.rgd.process.Utils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -39,6 +40,9 @@ public class PhenominerQC {
 
         long time0 = System.currentTimeMillis();
 
+        MemoryMonitor memoryMonitor = new MemoryMonitor();
+        memoryMonitor.start();
+
         log.info(getVersion());
 
         SimpleDateFormat sdt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -66,7 +70,10 @@ public class PhenominerQC {
 
         dao.updateSemSdNoa();
 
-        String msg = "=== OK === elapsed "+ Utils.formatElapsedTime(time0, System.currentTimeMillis());
+        memoryMonitor.stop();
+        log.info(memoryMonitor.getSummary());
+
+        String msg = "=== OK === elapsed "+ Utils.formatElapsedTime(time0, System.currentTimeMillis()) + "\n";
         log.info(msg);
     }
 
