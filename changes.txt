@@ -1,3 +1,6 @@
+May 04, 2026
+  refactored: SQL strings rewritten as Java text blocks; updated dependencies
+
 Apr 13, 2026
   added MemoryMonitor; updated dependencies
 

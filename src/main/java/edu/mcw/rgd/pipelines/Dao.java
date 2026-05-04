@@ -28,51 +28,53 @@ public class Dao {
     /// XCO22 (controlled sodium diet) duration must be shorter than 1 minute
     public List<String> checkXCO22Duration() throws Exception {
 
-        String sql =
-            "select concat('https://pipelines.rgd.mcw.edu/rgdweb/curation/phenominer/records.html?act=edit', " +
-            "  LISTAGG(id_url, '') within group (order by id_url)) as record_urls \n" +
-            "from (\n" +
-            "SELECT s.STUDY_ID,\n" +
-            "  e.EXPERIMENT_ID,\n" +
-            "  e.EXPERIMENT_NAME,\n" +
-            "  concat('&id=', a.ERID) as id_url,\n" +
-            "  a.*\n" +
-            "FROM study s,\n" +
-            "  experiment e ,\n" +
-            "  (\n" +
-            "  SELECT er.EXPERIMENT_RECORD_ID     AS erid,\n" +
-            "    er.EXPERIMENT_ID               AS exid,\n" +
-            "    ec.EXP_COND_ONT_ID             AS ecoid,\n" +
-            "    ec.EXP_COND_DUR_SEC_LOW_BOUND  AS dur\n" +
-            "  FROM EXPERIMENT_RECORD er,\n" +
-            "    EXPERIMENT_CONDITION ec,\n" +
-            "    MEASUREMENT_METHOD mm\n" +
-            "  WHERE er.CURATION_STATUS in (35, 40)\n" +
-            "  AND er.EXPERIMENT_RECORD_ID       = ec.EXPERIMENT_RECORD_ID\n" +
-            "  AND ec.EXP_COND_DUR_SEC_LOW_BOUND > 0\n" +
-            "  AND mm.MEASUREMENT_METHOD_ID      = er.MEASUREMENT_METHOD_ID\n" +
-            "  \n" +
-            "  UNION ALL\n" +
-            "  \n" +
-            "  SELECT er.EXPERIMENT_RECORD_ID    AS erid,\n" +
-            "    er.EXPERIMENT_ID                AS exid,\n" +
-            "    ec1.EXP_COND_ONT_ID             AS ecoid,\n" +
-            "    ec1.EXP_COND_DUR_SEC_HIGH_BOUND AS dur\n" +
-            "  FROM EXPERIMENT_RECORD er,\n" +
-            "    EXPERIMENT_CONDITION ec1,\n" +
-            "    MEASUREMENT_METHOD mm\n" +
-            "  WHERE er.CURATION_STATUS in (35, 40)\n" +
-            "  AND er.EXPERIMENT_RECORD_ID       = ec1.EXPERIMENT_RECORD_ID\n" +
-            "  AND mm.MEASUREMENT_METHOD_ID      = er.MEASUREMENT_METHOD_ID\n" +
-            "  AND ec1.EXP_COND_DUR_SEC_HIGH_BOUND > 0\n" +
-            "  ) a\n" +
-            "WHERE a.ecoid  = 'XCO:0000022'\n" +
-            "AND a.dur      < 60\n" +
-            "AND a.exid     = e.EXPERIMENT_ID\n" +
-            //"and s.STUDY_ID not in (14,21,22,41,401,527,461,529,717,441,421,526,481,482,381,528,522)\n" +
-            "AND e.STUDY_ID = s.STUDY_ID\n" +
-            ") b\n" +
-            "group by b.ecoid";
+        String sql = """
+            select concat('https://pipelines.rgd.mcw.edu/rgdweb/curation/phenominer/records.html?act=edit',
+              LISTAGG(id_url, '') within group (order by id_url)) as record_urls
+            from
+              (
+                SELECT s.STUDY_ID,
+                  e.EXPERIMENT_ID,
+                  e.EXPERIMENT_NAME,
+                  concat('&id=', a.ERID) as id_url,
+                  a.*
+                FROM study s,
+                  experiment e,
+                  (
+                    SELECT er.EXPERIMENT_RECORD_ID     AS erid,
+                      er.EXPERIMENT_ID               AS exid,
+                      ec.EXP_COND_ONT_ID             AS ecoid,
+                      ec.EXP_COND_DUR_SEC_LOW_BOUND  AS dur
+                    FROM EXPERIMENT_RECORD er,
+                      EXPERIMENT_CONDITION ec,
+                      MEASUREMENT_METHOD mm
+                    WHERE er.CURATION_STATUS in (35, 40)
+                      AND er.EXPERIMENT_RECORD_ID       = ec.EXPERIMENT_RECORD_ID
+                      AND ec.EXP_COND_DUR_SEC_LOW_BOUND > 0
+                      AND mm.MEASUREMENT_METHOD_ID      = er.MEASUREMENT_METHOD_ID
+
+                    UNION ALL
+
+                    SELECT er.EXPERIMENT_RECORD_ID    AS erid,
+                      er.EXPERIMENT_ID                AS exid,
+                      ec1.EXP_COND_ONT_ID             AS ecoid,
+                      ec1.EXP_COND_DUR_SEC_HIGH_BOUND AS dur
+                    FROM EXPERIMENT_RECORD er,
+                      EXPERIMENT_CONDITION ec1,
+                      MEASUREMENT_METHOD mm
+                    WHERE er.CURATION_STATUS in (35, 40)
+                      AND er.EXPERIMENT_RECORD_ID       = ec1.EXPERIMENT_RECORD_ID
+                      AND mm.MEASUREMENT_METHOD_ID      = er.MEASUREMENT_METHOD_ID
+                      AND ec1.EXP_COND_DUR_SEC_HIGH_BOUND > 0
+                  ) a
+                WHERE a.ecoid  = 'XCO:0000022'
+                  AND a.dur      < 60
+                  AND a.exid     = e.EXPERIMENT_ID
+                  -- and s.STUDY_ID not in (14,21,22,41,401,527,461,529,717,441,421,526,481,482,381,528,522)
+                  AND e.STUDY_ID = s.STUDY_ID
+              ) b
+            group by b.ecoid
+            """;
 
         List<String> issues = StringListQuery.execute(adao, sql);
         if( !issues.isEmpty() ) {
@@ -104,22 +106,23 @@ public class Dao {
 
     public List<String> checkInvalidRsoUsage() throws Exception {
 
-        String sql =
-        "select ot.TERM_ACC||'  '||ot.TERM from ONT_TERMS ot\n" +
-            "where ot.TERM_ACC like 'RS:%'\n" +
-            "and ot.TERM_ACC not in\n" +
-            "(\n" +
-            "select os.term_acc from ONT_SYNONYMS os\n" +
-            "where os.TERM_ACC like 'RS:%'\n" +
-            "and lower(os.SYNONYM_NAME) like 'rgd id%'\n" +
-            ")\n" +
-            "and ot.IS_OBSOLETE=0\n" +
-            "and ot.term_acc in\n" +
-            "( \n" +
-            "select sa.strain_ont_id from SAMPLE sa, EXPERIMENT_RECORD er\n" +
-            "where sa.sample_id = er.sample_id\n" +
-            "and er.curation_status <> 50\n" +
-            ")\n";
+        String sql = """
+            select ot.TERM_ACC||'  '||ot.TERM from ONT_TERMS ot
+            where ot.TERM_ACC like 'RS:%'
+              and ot.TERM_ACC not in
+              (
+                select os.term_acc from ONT_SYNONYMS os
+                where os.TERM_ACC like 'RS:%'
+                  and lower(os.SYNONYM_NAME) like 'rgd id%'
+              )
+              and ot.IS_OBSOLETE=0
+              and ot.term_acc in
+              (
+                select sa.strain_ont_id from SAMPLE sa, EXPERIMENT_RECORD er
+                where sa.sample_id = er.sample_id
+                  and er.curation_status <> 50
+              )
+            """;
 
         List<String> issues = StringListQuery.execute(adao, sql);
         if( !issues.isEmpty() ) {
@@ -131,18 +134,27 @@ public class Dao {
     }
 
     public List<StringMapQuery.MapPair> getCmoTermsWithoutStdUnits() throws Exception{
-        String sql = "SELECT DISTINCT CLINICAL_MEASUREMENT_ONT_ID AS ont_id, er.MEASUREMENT_UNITS " +
-                "FROM CLINICAL_MEASUREMENT cm, EXPERIMENT_RECORD er " +
-                "WHERE er.CLINICAL_MEASUREMENT_ID = cm.CLINICAL_MEASUREMENT_ID " +
-                "AND cm.CLINICAL_MEASUREMENT_ONT_ID IN ( " +
-                "        SELECT ont_id FROM " +
-                "            ( SELECT DISTINCT CLINICAL_MEASUREMENT_ONT_ID AS ont_id, er.MEASUREMENT_UNITS" +
-                "                FROM CLINICAL_MEASUREMENT cm, EXPERIMENT_RECORD er" +
-                "                WHERE er.CLINICAL_MEASUREMENT_ID = cm.CLINICAL_MEASUREMENT_ID AND er.CURATION_STATUS=40" +
-                "                 AND cm.CLINICAL_MEASUREMENT_ONT_ID NOT IN (SELECT psu.ont_id FROM PHENOMINER_STANDARD_UNITS psu)" +
-                "            ) a" +
-                "        GROUP BY a.ont_id\n" +
-                "        HAVING COUNT(*) = 1 )";
+        String sql = """
+            SELECT DISTINCT CLINICAL_MEASUREMENT_ONT_ID AS ont_id, er.MEASUREMENT_UNITS
+            FROM CLINICAL_MEASUREMENT cm, EXPERIMENT_RECORD er
+            WHERE er.CLINICAL_MEASUREMENT_ID = cm.CLINICAL_MEASUREMENT_ID
+              AND cm.CLINICAL_MEASUREMENT_ONT_ID IN
+              (
+                SELECT ont_id FROM
+                  (
+                    SELECT DISTINCT CLINICAL_MEASUREMENT_ONT_ID AS ont_id, er.MEASUREMENT_UNITS
+                    FROM CLINICAL_MEASUREMENT cm, EXPERIMENT_RECORD er
+                    WHERE er.CLINICAL_MEASUREMENT_ID = cm.CLINICAL_MEASUREMENT_ID
+                      AND er.CURATION_STATUS=40
+                      AND cm.CLINICAL_MEASUREMENT_ONT_ID NOT IN
+                      (
+                        SELECT psu.ont_id FROM PHENOMINER_STANDARD_UNITS psu
+                      )
+                  ) a
+                GROUP BY a.ont_id
+                HAVING COUNT(*) = 1
+              )
+            """;
         return StringMapQuery.execute(adao, sql);
     }
 
@@ -164,8 +176,10 @@ public class Dao {
         if( cnt!=0 ) {
             return false; // already in table
         }
-        String sql = "INSERT INTO PHENOMINER_TERM_UNIT_SCALES (ont_id, unit_from, unit_to, term_specific_scale, zero_offset) "+
-                "VALUES(?, ?, ?, 1, 0)";
+        String sql = """
+            INSERT INTO PHENOMINER_TERM_UNIT_SCALES (ont_id, unit_from, unit_to, term_specific_scale, zero_offset)
+            VALUES(?, ?, ?, 1, 0)
+            """;
         logNewStandardUnits.info("new unit scales:  term:"+ontId+" from:"+stdUnit+" to:"+stdUnit+", term_specific_scale=1, zero_offset=0");
         adao.update(sql, ontId, stdUnit, stdUnit);
         return true;
@@ -173,37 +187,56 @@ public class Dao {
 
     public int updatePhenominerTermUnitScales() throws Exception {
         // Update PHENOMINER_TERM_UNIT_SCALES with PHENOMINER_STANDARD_UNITS
-        String sql1 = "update PHENOMINER_TERM_UNIT_SCALES tus " +
-                "set (tus.UNIT_TO)= (select us.STANDARD_UNIT from PHENOMINER_STANDARD_UNITS us where us.ONT_ID=tus.ONT_ID) " +
-                "where (tus.ONT_ID) in" +
-                "(select us.ONT_ID from PHENOMINER_STANDARD_UNITS us)";
+        String sql1 = """
+            update PHENOMINER_TERM_UNIT_SCALES tus
+            set (tus.UNIT_TO) =
+              (
+                select us.STANDARD_UNIT from PHENOMINER_STANDARD_UNITS us where us.ONT_ID = tus.ONT_ID
+              )
+            where (tus.ONT_ID) in
+              (
+                select us.ONT_ID from PHENOMINER_STANDARD_UNITS us
+              )
+            """;
         int cnt1 = adao.update(sql1);
 
         // add to PHENOMINER_TERM_UNIT_SCALES for new records in PHENOMINER_UNIT_SCALES
-        String sql2 =
-                "INSERT INTO PHENOMINER_TERM_UNIT_SCALES " +
-                "SELECT UNIQUE CM.CLINICAL_MEASUREMENT_ONT_ID,ER.MEASUREMENT_UNITS,SU.STANDARD_UNIT,US.SCALE,US.ZERO_OFFSET " +
-                "FROM EXPERIMENT_RECORD ER, CLINICAL_MEASUREMENT CM,PHENOMINER_STANDARD_UNITS SU, PHENOMINER_UNIT_SCALES US " +
-                "WHERE ER.CLINICAL_MEASUREMENT_ID = CM.CLINICAL_MEASUREMENT_ID AND CM.CLINICAL_MEASUREMENT_ONT_ID = SU.ONT_ID "+
-                "  AND ER.MEASUREMENT_UNITS = US.UNIT_FROM AND SU.STANDARD_UNIT = US.UNIT_TO " +
-                "  AND (ER.MEASUREMENT_UNITS,SU.STANDARD_UNIT) not in (" +
-                "      select unit_from, unit_to from phenominer_term_unit_scales tus1 where tus1.ont_id=su.ont_id)";
+        String sql2 = """
+            INSERT INTO PHENOMINER_TERM_UNIT_SCALES
+            SELECT UNIQUE CM.CLINICAL_MEASUREMENT_ONT_ID, ER.MEASUREMENT_UNITS, SU.STANDARD_UNIT, US.SCALE, US.ZERO_OFFSET
+            FROM EXPERIMENT_RECORD ER, CLINICAL_MEASUREMENT CM, PHENOMINER_STANDARD_UNITS SU, PHENOMINER_UNIT_SCALES US
+            WHERE ER.CLINICAL_MEASUREMENT_ID = CM.CLINICAL_MEASUREMENT_ID
+              AND CM.CLINICAL_MEASUREMENT_ONT_ID = SU.ONT_ID
+              AND ER.MEASUREMENT_UNITS = US.UNIT_FROM
+              AND SU.STANDARD_UNIT = US.UNIT_TO
+              AND (ER.MEASUREMENT_UNITS, SU.STANDARD_UNIT) not in
+              (
+                select unit_from, unit_to from phenominer_term_unit_scales tus1 where tus1.ont_id = su.ont_id
+              )
+            """;
         int cnt2 = adao.update(sql2);
         return cnt1+cnt2;
     }
 
     public int getCmoTermsWithoutStandardUnits() throws Exception {
-        String sql = "SELECT a.ont_id||' '''||ot.TERM||'''   record_count='||a.record_count " +
-                "FROM (" +
-                "  SELECT CLINICAL_MEASUREMENT_ONT_ID AS ont_id, COUNT(*) AS record_count" +
-                "  FROM CLINICAL_MEASUREMENT cm, EXPERIMENT_RECORD er" +
-                "  WHERE er.CLINICAL_MEASUREMENT_ID = cm.CLINICAL_MEASUREMENT_ID" +
-                "   AND er.CURATION_STATUS=40" +
-                "   AND cm.CLINICAL_MEASUREMENT_ONT_ID NOT IN (SELECT psu.ont_id FROM PHENOMINER_STANDARD_UNITS psu)" +
-                "  GROUP BY CLINICAL_MEASUREMENT_ONT_ID) a " +
-                "LEFT JOIN ONT_TERMS ot " +
-                "ON a.ont_id = ot.TERM_ACC " +
-                "ORDER BY a.record_count DESC";
+        String sql = """
+            SELECT a.ont_id||' '''||ot.TERM||'''   record_count='||a.record_count
+            FROM
+              (
+                SELECT CLINICAL_MEASUREMENT_ONT_ID AS ont_id, COUNT(*) AS record_count
+                FROM CLINICAL_MEASUREMENT cm, EXPERIMENT_RECORD er
+                WHERE er.CLINICAL_MEASUREMENT_ID = cm.CLINICAL_MEASUREMENT_ID
+                  AND er.CURATION_STATUS=40
+                  AND cm.CLINICAL_MEASUREMENT_ONT_ID NOT IN
+                  (
+                    SELECT psu.ont_id FROM PHENOMINER_STANDARD_UNITS psu
+                  )
+                GROUP BY CLINICAL_MEASUREMENT_ONT_ID
+              ) a
+            LEFT JOIN ONT_TERMS ot
+              ON a.ont_id = ot.TERM_ACC
+            ORDER BY a.record_count DESC
+            """;
 
         List<String> issues = StringListQuery.execute(adao, sql);
         for( String line: issues ) {
@@ -214,16 +247,20 @@ public class Dao {
 
     public int getUndefinedUnitConversions() throws Exception {
         //String sql = "SELECT CM.CLINICAL_MEASUREMENT_ONT_ID, ER.MEASUREMENT_UNITS, SU.STANDARD_UNIT, COUNT(*) AS number_of_records_affected\n" +
-        String sql = "SELECT CM.CLINICAL_MEASUREMENT_ONT_ID||' measurement_units=['||ER.MEASUREMENT_UNITS" +
-                " ||']     standard_unit=['||SU.STANDARD_UNIT||']    number_of_records_affected='||COUNT(*) " +
-
-                "FROM EXPERIMENT_RECORD ER, CLINICAL_MEASUREMENT CM, PHENOMINER_STANDARD_UNITS SU " +
-                "WHERE ER.CLINICAL_MEASUREMENT_ID = CM.CLINICAL_MEASUREMENT_ID " +
-                " AND CM.CLINICAL_MEASUREMENT_ONT_ID = SU.ONT_ID" +
-                " AND er.CURATION_STATUS IN (35,40)" +
-                " AND (ER.MEASUREMENT_UNITS,SU.STANDARD_UNIT) NOT IN (SELECT unit_from, unit_to FROM phenominer_term_unit_scales tus1 WHERE tus1.ont_id=su.ont_id) " +
-                "GROUP BY CM.CLINICAL_MEASUREMENT_ONT_ID, ER.MEASUREMENT_UNITS, SU.STANDARD_UNIT " +
-                "ORDER BY COUNT(*) DESC";
+        String sql = """
+            SELECT CM.CLINICAL_MEASUREMENT_ONT_ID||' measurement_units=['||ER.MEASUREMENT_UNITS
+              ||']     standard_unit=['||SU.STANDARD_UNIT||']    number_of_records_affected='||COUNT(*)
+            FROM EXPERIMENT_RECORD ER, CLINICAL_MEASUREMENT CM, PHENOMINER_STANDARD_UNITS SU
+            WHERE ER.CLINICAL_MEASUREMENT_ID = CM.CLINICAL_MEASUREMENT_ID
+              AND CM.CLINICAL_MEASUREMENT_ONT_ID = SU.ONT_ID
+              AND er.CURATION_STATUS IN (35,40)
+              AND (ER.MEASUREMENT_UNITS, SU.STANDARD_UNIT) NOT IN
+              (
+                SELECT unit_from, unit_to FROM phenominer_term_unit_scales tus1 WHERE tus1.ont_id = su.ont_id
+              )
+            GROUP BY CM.CLINICAL_MEASUREMENT_ONT_ID, ER.MEASUREMENT_UNITS, SU.STANDARD_UNIT
+            ORDER BY COUNT(*) DESC
+            """;
 
         List<String> issues = StringListQuery.execute(adao, sql);
         for( String line: issues ) {
@@ -233,58 +270,64 @@ public class Dao {
     }
 
     public int updateSemSdNoa() throws Exception {
-        String sql = "update" +
-                "  (select MEASUREMENT_SEM, MEASUREMENT_SD, NUMBER_OF_ANIMALS" +
-                "   from EXPERIMENT_RECORD er, SAMPLE sa" +
-                "   where" +
-                "      er.SAMPLE_ID = sa.SAMPLE_ID and" +
-                "      not er.MEASUREMENT_SD is null and" +
-                "      er.MEASUREMENT_SEM is null and" +
-                "      sa.NUMBER_OF_ANIMALS > 0 and" +
-                "      er.CURATION_STATUS = 40" +
-                "  ) a " +
-                "set MEASUREMENT_SEM=MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS)";
+        String sql = """
+            update
+              (
+                select MEASUREMENT_SEM, MEASUREMENT_SD, NUMBER_OF_ANIMALS
+                from EXPERIMENT_RECORD er, SAMPLE sa
+                where er.SAMPLE_ID = sa.SAMPLE_ID
+                  and not er.MEASUREMENT_SD is null
+                  and er.MEASUREMENT_SEM is null
+                  and sa.NUMBER_OF_ANIMALS > 0
+                  and er.CURATION_STATUS = 40
+              ) a
+            set MEASUREMENT_SEM = MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS)
+            """;
         adao.update(sql);
 
-        sql = "update" +
-                " (select MEASUREMENT_SEM, MEASUREMENT_SD, NUMBER_OF_ANIMALS" +
-                "  from EXPERIMENT_RECORD er, SAMPLE sa" +
-                "  where" +
-                "    er.SAMPLE_ID = sa.SAMPLE_ID and" +
-                "    er.MEASUREMENT_SD is null and" +
-                "    not er.MEASUREMENT_SEM is null and" +
-                "    sa.NUMBER_OF_ANIMALS > 0 and" +
-                "    er.CURATION_STATUS = 40" +
-                "  ) a " +
-                "set MEASUREMENT_SD=MEASUREMENT_SEM*sqrt(NUMBER_OF_ANIMALS)";
+        sql = """
+            update
+              (
+                select MEASUREMENT_SEM, MEASUREMENT_SD, NUMBER_OF_ANIMALS
+                from EXPERIMENT_RECORD er, SAMPLE sa
+                where er.SAMPLE_ID = sa.SAMPLE_ID
+                  and er.MEASUREMENT_SD is null
+                  and not er.MEASUREMENT_SEM is null
+                  and sa.NUMBER_OF_ANIMALS > 0
+                  and er.CURATION_STATUS = 40
+              ) a
+            set MEASUREMENT_SD = MEASUREMENT_SEM*sqrt(NUMBER_OF_ANIMALS)
+            """;
         adao.update(sql);
 
-        sql = "update" +
-                " (select MEASUREMENT_SEM, MEASUREMENT_SD, NUMBER_OF_ANIMALS" +
-                "  from EXPERIMENT_RECORD er, SAMPLE sa" +
-                "  where" +
-                "    er.SAMPLE_ID = sa.SAMPLE_ID and" +
-                "    NOT er.MEASUREMENT_SD is null and" +
-                "    not er.MEASUREMENT_SEM is null and" +
-                "    sa.NUMBER_OF_ANIMALS = 0 and" +
-                "    er.CURATION_STATUS = 40" +
-                "  ) a " +
-                "set NUMBER_OF_ANIMALS=round(power(MEASUREMENT_SD / MEASUREMENT_SEM, 2))";
+        sql = """
+            update
+              (
+                select MEASUREMENT_SEM, MEASUREMENT_SD, NUMBER_OF_ANIMALS
+                from EXPERIMENT_RECORD er, SAMPLE sa
+                where er.SAMPLE_ID = sa.SAMPLE_ID
+                  and NOT er.MEASUREMENT_SD is null
+                  and not er.MEASUREMENT_SEM is null
+                  and sa.NUMBER_OF_ANIMALS = 0
+                  and er.CURATION_STATUS = 40
+              ) a
+            set NUMBER_OF_ANIMALS = round(power(MEASUREMENT_SD / MEASUREMENT_SEM, 2))
+            """;
         adao.update(sql);
 
 
         //sql = "select MEASUREMENT_SEM, MEASUREMENT_SD, NUMBER_OF_ANIMALS, MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS) as a, round(MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS)*" +
         //        "    power(10,ceil(log(10,MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS)))+4))/power(10,ceil(log(10,MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS)))+4) as b" +
-        sql = "select MEASUREMENT_SEM||'|'||MEASUREMENT_SD||'|'||NUMBER_OF_ANIMALS||'|'||MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS)||'|'||round(MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS)*" +
-                "    power(10,ceil(log(10,MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS)))+4))/power(10,ceil(log(10,MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS)))+4)" +
-
-                "  from EXPERIMENT_RECORD er, SAMPLE sa" +
-                "  where" +
-                "    er.SAMPLE_ID = sa.SAMPLE_ID and" +
-                "    not er.MEASUREMENT_SD is null and" +
-                "    er.MEASUREMENT_SEM is null and" +
-                "    sa.NUMBER_OF_ANIMALS > 0 and" +
-                "    er.CURATION_STATUS = 40";
+        sql = """
+            select MEASUREMENT_SEM||'|'||MEASUREMENT_SD||'|'||NUMBER_OF_ANIMALS||'|'||MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS)||'|'||round(MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS)*
+                power(10,ceil(log(10,MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS)))+4))/power(10,ceil(log(10,MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS)))+4)
+            from EXPERIMENT_RECORD er, SAMPLE sa
+            where er.SAMPLE_ID = sa.SAMPLE_ID
+              and not er.MEASUREMENT_SD is null
+              and er.MEASUREMENT_SEM is null
+              and sa.NUMBER_OF_ANIMALS > 0
+              and er.CURATION_STATUS = 40
+            """;
 
         List<String> issues = StringListQuery.execute(adao, sql);
         for( String line: issues ) {
