@@ -1,3 +1,6 @@
+May 12, 2026
+  README: documented all audit checks, mutation steps, and audit log channels; updated dependencies
+
 May 04, 2026
   refactored: SQL strings rewritten as Java text blocks; updated dependencies
 
