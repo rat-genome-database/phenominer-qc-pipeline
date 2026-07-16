@@ -1,3 +1,7 @@
+Jul 16, 2026
+  fixed SEM/SD/NOA report: it ran after the updates that cleared its own criteria, so it never reported anything
+  removed obsolete scripts directory; updated dependencies
+
 May 12, 2026
   README: documented all audit checks, mutation steps, and audit log channels; updated dependencies
 
