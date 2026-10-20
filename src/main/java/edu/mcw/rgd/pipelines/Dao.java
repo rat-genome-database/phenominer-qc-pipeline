@@ -30,7 +30,7 @@ public class Dao {
 
         String sql = """
             select concat('https://pipelines.rgd.mcw.edu/rgdweb/curation/phenominer/records.html?act=edit',
-              LISTAGG(id_url, '') within group (order by id_url)) as record_urls
+              STRING_AGG(id_url, '' ORDER BY id_url)) as record_urls
             from
               (
                 SELECT s.STUDY_ID,
@@ -89,7 +89,7 @@ public class Dao {
     public List<String> checkUnitConversionsForNulls() throws Exception {
 
         String sql = """
-            select ONT_ID || '  UNIT_FROM[ ' ||unit_from||' ] UNIT_TO[ '||unit_to||' ]  TERM_SPECIFIC_SCALE[ '||term_specific_scale||' ] ZERO_OFFSET[ '||zero_offset||' ]'
+            select CONCAT(ONT_ID, '  UNIT_FROM[ ', unit_from, ' ] UNIT_TO[ ', unit_to, ' ]  TERM_SPECIFIC_SCALE[ ', term_specific_scale, ' ] ZERO_OFFSET[ ', zero_offset, ' ]')
             from PHENOMINER_TERM_UNIT_SCALES ptus
             where ptus.TERM_SPECIFIC_SCALE is null
                or ptus.ZERO_OFFSET is null
@@ -107,7 +107,7 @@ public class Dao {
     public List<String> checkInvalidRsoUsage() throws Exception {
 
         String sql = """
-            select ot.TERM_ACC||'  '||ot.TERM from ONT_TERMS ot
+            select CONCAT(ot.TERM_ACC, '  ', ot.TERM) from ONT_TERMS ot
             where ot.TERM_ACC like 'RS:%'
               and ot.TERM_ACC not in
               (
@@ -189,7 +189,7 @@ public class Dao {
         // Update PHENOMINER_TERM_UNIT_SCALES with PHENOMINER_STANDARD_UNITS
         String sql1 = """
             update PHENOMINER_TERM_UNIT_SCALES tus
-            set (tus.UNIT_TO) =
+            set UNIT_TO =
               (
                 select us.STANDARD_UNIT from PHENOMINER_STANDARD_UNITS us where us.ONT_ID = tus.ONT_ID
               )
@@ -203,7 +203,7 @@ public class Dao {
         // add to PHENOMINER_TERM_UNIT_SCALES for new records in PHENOMINER_UNIT_SCALES
         String sql2 = """
             INSERT INTO PHENOMINER_TERM_UNIT_SCALES
-            SELECT UNIQUE CM.CLINICAL_MEASUREMENT_ONT_ID, ER.MEASUREMENT_UNITS, SU.STANDARD_UNIT, US.SCALE, US.ZERO_OFFSET
+            SELECT DISTINCT CM.CLINICAL_MEASUREMENT_ONT_ID, ER.MEASUREMENT_UNITS, SU.STANDARD_UNIT, US.SCALE, US.ZERO_OFFSET
             FROM EXPERIMENT_RECORD ER, CLINICAL_MEASUREMENT CM, PHENOMINER_STANDARD_UNITS SU, PHENOMINER_UNIT_SCALES US
             WHERE ER.CLINICAL_MEASUREMENT_ID = CM.CLINICAL_MEASUREMENT_ID
               AND CM.CLINICAL_MEASUREMENT_ONT_ID = SU.ONT_ID
@@ -220,7 +220,7 @@ public class Dao {
 
     public int getCmoTermsWithoutStandardUnits() throws Exception {
         String sql = """
-            SELECT a.ont_id||' '''||ot.TERM||'''   record_count='||a.record_count
+            SELECT CONCAT(a.ont_id, ' ''', ot.TERM, '''   record_count=', a.record_count)
             FROM
               (
                 SELECT CLINICAL_MEASUREMENT_ONT_ID AS ont_id, COUNT(*) AS record_count
@@ -248,8 +248,8 @@ public class Dao {
     public int getUndefinedUnitConversions() throws Exception {
         //String sql = "SELECT CM.CLINICAL_MEASUREMENT_ONT_ID, ER.MEASUREMENT_UNITS, SU.STANDARD_UNIT, COUNT(*) AS number_of_records_affected\n" +
         String sql = """
-            SELECT CM.CLINICAL_MEASUREMENT_ONT_ID||' measurement_units=['||ER.MEASUREMENT_UNITS
-              ||']     standard_unit=['||SU.STANDARD_UNIT||']    number_of_records_affected='||COUNT(*)
+            SELECT CONCAT(CM.CLINICAL_MEASUREMENT_ONT_ID, ' measurement_units=[', ER.MEASUREMENT_UNITS,
+              ']     standard_unit=[', SU.STANDARD_UNIT, ']    number_of_records_affected=', COUNT(*))
             FROM EXPERIMENT_RECORD ER, CLINICAL_MEASUREMENT CM, PHENOMINER_STANDARD_UNITS SU
             WHERE ER.CLINICAL_MEASUREMENT_ID = CM.CLINICAL_MEASUREMENT_ID
               AND CM.CLINICAL_MEASUREMENT_ONT_ID = SU.ONT_ID
@@ -275,8 +275,8 @@ public class Dao {
         //       MEASUREMENT_SEM for exactly the rows matched here, so once it has run,
         //       this query can never match anything again
         String reportSql = """
-            select MEASUREMENT_SEM||'|'||MEASUREMENT_SD||'|'||NUMBER_OF_ANIMALS||'|'||MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS)||'|'||round(MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS)*
-                power(10,ceil(log(10,MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS)))+4))/power(10,ceil(log(10,MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS)))+4)
+            select CONCAT(MEASUREMENT_SEM, '|', MEASUREMENT_SD, '|', NUMBER_OF_ANIMALS, '|', MEASUREMENT_SD/sqrt(CAST(NUMBER_OF_ANIMALS AS NUMERIC)), '|', round(MEASUREMENT_SD/sqrt(CAST(NUMBER_OF_ANIMALS AS NUMERIC))*
+                power(10,ceil(log(10,MEASUREMENT_SD/sqrt(CAST(NUMBER_OF_ANIMALS AS NUMERIC))))+4))/power(10,ceil(log(10,MEASUREMENT_SD/sqrt(CAST(NUMBER_OF_ANIMALS AS NUMERIC))))+4))
             from EXPERIMENT_RECORD er, SAMPLE sa
             where er.SAMPLE_ID = sa.SAMPLE_ID
               and not er.MEASUREMENT_SD is null
@@ -291,47 +291,38 @@ public class Dao {
         }
 
         String sql = """
-            update
-              (
-                select MEASUREMENT_SEM, MEASUREMENT_SD, NUMBER_OF_ANIMALS
-                from EXPERIMENT_RECORD er, SAMPLE sa
-                where er.SAMPLE_ID = sa.SAMPLE_ID
-                  and not er.MEASUREMENT_SD is null
-                  and er.MEASUREMENT_SEM is null
-                  and sa.NUMBER_OF_ANIMALS > 0
-                  and er.CURATION_STATUS = 40
-              ) a
-            set MEASUREMENT_SEM = MEASUREMENT_SD/sqrt(NUMBER_OF_ANIMALS)
+            update EXPERIMENT_RECORD er
+            set MEASUREMENT_SEM = er.MEASUREMENT_SD/sqrt(CAST(sa.NUMBER_OF_ANIMALS AS NUMERIC))
+            from SAMPLE sa
+            where er.SAMPLE_ID = sa.SAMPLE_ID
+              and not er.MEASUREMENT_SD is null
+              and er.MEASUREMENT_SEM is null
+              and sa.NUMBER_OF_ANIMALS > 0
+              and er.CURATION_STATUS = 40
             """;
         adao.update(sql);
 
         sql = """
-            update
-              (
-                select MEASUREMENT_SEM, MEASUREMENT_SD, NUMBER_OF_ANIMALS
-                from EXPERIMENT_RECORD er, SAMPLE sa
-                where er.SAMPLE_ID = sa.SAMPLE_ID
-                  and er.MEASUREMENT_SD is null
-                  and not er.MEASUREMENT_SEM is null
-                  and sa.NUMBER_OF_ANIMALS > 0
-                  and er.CURATION_STATUS = 40
-              ) a
-            set MEASUREMENT_SD = MEASUREMENT_SEM*sqrt(NUMBER_OF_ANIMALS)
+            update EXPERIMENT_RECORD er
+            set MEASUREMENT_SD = er.MEASUREMENT_SEM*sqrt(CAST(sa.NUMBER_OF_ANIMALS AS NUMERIC))
+            from SAMPLE sa
+            where er.SAMPLE_ID = sa.SAMPLE_ID
+              and er.MEASUREMENT_SD is null
+              and not er.MEASUREMENT_SEM is null
+              and sa.NUMBER_OF_ANIMALS > 0
+              and er.CURATION_STATUS = 40
             """;
         adao.update(sql);
 
         sql = """
-            update
-              (
-                select MEASUREMENT_SEM, MEASUREMENT_SD, NUMBER_OF_ANIMALS
-                from EXPERIMENT_RECORD er, SAMPLE sa
-                where er.SAMPLE_ID = sa.SAMPLE_ID
-                  and NOT er.MEASUREMENT_SD is null
-                  and not er.MEASUREMENT_SEM is null
-                  and sa.NUMBER_OF_ANIMALS = 0
-                  and er.CURATION_STATUS = 40
-              ) a
-            set NUMBER_OF_ANIMALS = round(power(MEASUREMENT_SD / MEASUREMENT_SEM, 2))
+            update SAMPLE sa
+            set NUMBER_OF_ANIMALS = round(power(er.MEASUREMENT_SD / er.MEASUREMENT_SEM, 2))
+            from EXPERIMENT_RECORD er
+            where er.SAMPLE_ID = sa.SAMPLE_ID
+              and NOT er.MEASUREMENT_SD is null
+              and not er.MEASUREMENT_SEM is null
+              and sa.NUMBER_OF_ANIMALS = 0
+              and er.CURATION_STATUS = 40
             """;
         adao.update(sql);
 

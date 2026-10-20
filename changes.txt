@@ -1,3 +1,6 @@
+Oct 20, 2026
+  migrated to postgres; updated dependencies
+
 Jul 16, 2026
   fixed SEM/SD/NOA report: it ran after the updates that cleared its own criteria, so it never reported anything
   removed obsolete scripts directory; updated dependencies
