@@ -18,11 +18,15 @@ else
   CMO_DEVELOPER_EMAIL="mtutaj@mcw.edu"
 fi
 
+# pipefail: exit status of the pipe is the java exit status, not tee's
+set -o pipefail
+
 cd $APPDIR
 
 java -Dspring.config=$APPDIR/../properties/default_db2.xml \
     -Dlog4j.configurationFile=file://$APPDIR/properties/log4j2.xml \
     -jar lib/$APPNAME.jar "$@" 2>&1 | tee run.log
+EXIT_CODE=$?
 
 XCO22_ISSUES_FILE="$APPDIR/logs/xco22_duration_daily.log"
 if [ -s "$XCO22_ISSUES_FILE" ]; then
@@ -59,4 +63,8 @@ if [ -s "$SEM_SD_NOA_FILE" ]; then
     mailx -s "[$SERVER] phenominer qc: SEM, SD, NOA report" $CMO_DEVELOPER_EMAIL < $SEM_SD_NOA_FILE
 fi
 
-mailx -s "[$SERVER] phenominer qc pipeline OK" $DEVELOPER_EMAIL < "$APPDIR/logs/summary.log"
+if [ $EXIT_CODE -eq 0 ]; then
+  mailx -s "[$SERVER] phenominer qc pipeline OK" $DEVELOPER_EMAIL < "$APPDIR/logs/summary.log"
+else
+  mailx -s "[$SERVER] phenominer qc pipeline FAILED" $DEVELOPER_EMAIL < "$APPDIR/run.log"
+fi
