@@ -1,3 +1,6 @@
+Nov 17, 2026
+  run.sh: send FAILED email (with run.log) when the pipeline fails, instead of OK
+
 Oct 20, 2026
   migrated to postgres; updated dependencies
 
